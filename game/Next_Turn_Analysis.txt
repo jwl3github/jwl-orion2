@@ -1,0 +1,38 @@
+----- CLIENT SIDE ----
+run_screen()                                             | gui/gui_client.py
+. process_new_turn()                                     | gui/gui_client.py
+.. networking.Client.next_turn()                         | gui/gui_client.py
+... wait_for_next_turn()                                 | networking/client.py
+.... send("NEXT_TURN") + recv()                          | networking/client.py
+
+----- SERVER SIDE ----
+run() [thread]                                           | networking/server.py
+. __game.next_turn()                                     | game.py
+.. recount()
+... recount_heros()    [update level per experience]
+... recount_colonies()
+.... colony.recount()                                    | universe/colony.py
+..... [various] rules.compose_XXX_summary
+..... [various] rules.count_summary_result
+..... init_available_production
+... recount_players()
+.. __move_ships()
+... [basic loop, but includes a lot of sq-root dist calc]
+.. __colonies_production()
+.. foreach player
+..+  raise_research() + [associated research updates]
+..+  raise_bc()
+.. raise_population()
+.. recount()
+
+
+----- CLIENT SIDE ----
+.. networking.Client.fetch_game_data()                   | gui/gui_client.py
+... send("FETCH_GAME_DATA") + recv()                     | networking/client.py
+    [full game data replacement, maybe big/slow??]
+. draw()                                                 | gui/gui_client.py
+
+
+
+how to find...
+game.next_turn()
