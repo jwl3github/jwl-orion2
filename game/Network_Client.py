@@ -46,7 +46,7 @@ class Network_Client(object):
         player = self.game_data['players'][self.player_id]
         player.unserialize(update_data)
         print ("fetch_update_data DONE.")
-        player.print_debug()
+        #player.print_debug()
         return True
 
     def fetch_game_data(self):

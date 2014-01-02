@@ -2,7 +2,7 @@ import pygame
 import os
 import hashlib
 
-DEBUG	= 0
+DEBUG = 0
 
 #COLORKEY = (253, 254, 255)
 COLORKEY = (0xdf, 0x32, 0xef)
@@ -122,7 +122,7 @@ def debug_output(s):
 #def moo2_draw_image_frame(surface, picture, frame, globalPalette, x=0, y=0):
 def moo2_draw_image_frame(surface, picture, frame, localPalette, x=0, y=0, DEBUG = None):
 #    localPalette = []
-#    debug_output("	Drawing frame #%i (frame offset is 0x%x)" % (frame, picture['offsets'][frame]))
+#    debug_output("Drawing frame #%i (frame offset is 0x%x)" % (frame, picture['offsets'][frame]))
 #    print "* globalPalette: " + str(globalPalette)
 #    print "globalPalette ID: " + str(id(globalPalette))
 #    localPalette = copy.deepcopy(globalPalette)
@@ -140,13 +140,13 @@ def moo2_draw_image_frame(surface, picture, frame, localPalette, x=0, y=0, DEBUG
 
     px = pygame.PixelArray(surface)
 
-    pos = 12 + (len(picture['offsets']) << 2)	# offset * 4
+    pos = 12 + (len(picture['offsets']) << 2) # offset * 4
 
     if picture['f_junction']:
-        debug_output("		TODO: junction")
+        debug_output("  TODO: junction")
 
     if picture['f_functional_color']:
-        debug_output("		TODO: functional color")
+        debug_output("  TODO: functional color")
 
     if picture['f_fill_background']:
         # FIXME: COLORKEY is hardcoded, should be determined somehow?
@@ -154,16 +154,16 @@ def moo2_draw_image_frame(surface, picture, frame, localPalette, x=0, y=0, DEBUG
         surface.set_colorkey(COLORKEY)
 
     if picture['f_no_compression']:
-        debug_output("		TODO: no compression")
+        debug_output("  TODO: no compression")
 
     if picture['f_internal_palete']:
-#        debug_output("		Image has local palette")
+#        debug_output("  Image has local palette")
         colorShift = ord(picture['data'][pos]) + (ord(picture['data'][pos+1]) << 8)
         pos += 2
         localColors = ord(picture['data'][pos]) + (ord(picture['data'][pos+1]) << 8)
         pos += 2
-#        debug_output("		Local palette shift: " + str(colorShift))
-#        debug_output("		Local palette colors: " + str(localColors))
+#        debug_output("Local palette shift: " + str(colorShift))
+#        debug_output("Local palette colors: " + str(localColors))
         for i in range(localColors):
             a = ord(picture['data'][pos])
             r = ord(picture['data'][pos+1]) * 4
@@ -182,40 +182,40 @@ def moo2_draw_image_frame(surface, picture, frame, localPalette, x=0, y=0, DEBUG
     X = x
     pos = picture['offsets'][frame]
     if (ord(picture['data'][pos]) == 1) and (ord(picture['data'][pos+1]) == 0):
-#		print "heading 0x01 0x00 looks ok"
+#print "heading 0x01 0x00 looks ok"
         pos += 2
         startY = ord(picture['data'][pos]) + (ord(picture['data'][pos+1]) << 8)
-#		print "startY: " + str(startY)
+#print "startY: " + str(startY)
         Y = y + startY
         pos += 2
         while pos < picture['offsets'][frame+1]:
             pixelCount = ord(picture['data'][pos]) + (ord(picture['data'][pos+1]) << 8)
-#	    print "pixelCount: %i" % pixelCount
-#	    if pixelCount == 1:
-#		print "color at [0,0] %i" % px[0][0]
+#    print "pixelCount: %i" % pixelCount
+#    if pixelCount == 1:
+#print "color at [0,0] %i" % px[0][0]
             pos += 2
-#			print "pixelCount: " + str(pixelCount)
+#print "pixelCount: " + str(pixelCount)
             if pixelCount > 0:
                 xIndent = ord(picture['data'][pos]) + (ord(picture['data'][pos+1]) << 8)
                 X += xIndent
                 pos += 2
-#				print "xIndent: " + str(xIndent)
+#print "xIndent: " + str(xIndent)
                 for i in range(pixelCount):
                     pixel = ord(picture['data'][pos])
-#		    if localPalette[pixel]['alpha']:
-#                	px[X][Y] = localPalette[pixel]['rgb']
-#                	pixel = ord(picture['data'][pos])
-#			print "		got alpha: %i" % localPalette[pixel]['alpha']
-#		    else:
+#    if localPalette[pixel]['alpha']:
+#                px[X][Y] = localPalette[pixel]['rgb']
+#                pixel = ord(picture['data'][pos])
+#print "got alpha: %i" % localPalette[pixel]['alpha']
+#    else:
                     px[X][Y] = localPalette[pixel]['rgb']
-#                	pixel = ord(picture['data'][pos])
+#                pixel = ord(picture['data'][pos])
                     pos += 1
 # put-pixel onto surface
 #                    px[X][Y] = localPalette[pixel]['rgb']
                     X += 1
                 if (pixelCount % 2) == 1:
                     pos += 1
-#				print
+#print
             else:
                 yIndent = ord(picture['data'][pos]) + (ord(picture['data'][pos+1]) << 8)
                 pos += 2
@@ -229,23 +229,23 @@ def moo2_draw_image_frame(surface, picture, frame, localPalette, x=0, y=0, DEBUG
 
 def load_surface(picture, picture_frame, local_palette, colorkey = None):
 #    debug_output("@ load_surface")
-#    debug_output("	lbx_source_filename: %s" % lbx_source_filename)
-#    debug_output("	lbx_file_index: %i" % lbx_file_index)
-#    debug_output("	picture_frame: %i" % picture_frame)
-#    debug_output("	colorkey: %s" % colorkey)
+#    debug_output("lbx_source_filename: %s" % lbx_source_filename)
+#    debug_output("lbx_file_index: %i" % lbx_file_index)
+#    debug_output("picture_frame: %i" % picture_frame)
+#    debug_output("colorkey: %s" % colorkey)
 #    debug_output("")
     """
     """
 
     surface = pygame.Surface((picture['width'], picture['height']))
 #    if lbx_source_filename == "APP_PICS.LBX":
-#	moo2_draw_image_frame(surface, picture, picture_frame, local_palette, 0, 0, True)
-#	moo2_draw_image_frame(surface, picture, picture_frame, local_palette)
+#moo2_draw_image_frame(surface, picture, picture_frame, local_palette, 0, 0, True)
+#moo2_draw_image_frame(surface, picture, picture_frame, local_palette)
 #    else:
-#	moo2_draw_image_frame(surface, picture, picture_frame, local_palette)
+#moo2_draw_image_frame(surface, picture, picture_frame, local_palette)
     moo2_draw_image_frame(surface, picture, picture_frame, local_palette)
     if colorkey is not None:
-#	print("	setting colorkey!")
+#print("setting colorkey!")
         surface.set_colorkey(colorkey)
     return surface
 # end func load_surface
@@ -445,27 +445,27 @@ Both of the font resources contain definition of 6 fonts
 http://www.spheriumnorth.com/orion-forum/nfphpbb/viewtopic.php?t=91&highlight=font
 
 offset ~ offset         size        meaning
-0x0000 ~ 0x0071:	0x72
+0x0000 ~ 0x0071:        0x72
 
-0x0072 ~ 0x016b:			all bytes containing 08
-0x016c ~ 0x0567:			???
-0x0568 ~ 0x059b:			???
+0x0072 ~ 0x016b:                all bytes containing 08
+0x016c ~ 0x0567:                ???
+0x0568 ~ 0x059b:                ???
 
-0x059c ~ 0x069b:	0x100       font #1 glyphs widths
-0x069c ~ 0x079b:	0x100       font #2 glyphs widths
-0x079c ~ 0x089b:	0x100       font #3 glyphs widths
-0x089c ~ 0x099b:	0x100       font #4 glyphs widths
-0x099c ~ 0x0a9b:	0x100       font #5 glyphs widths
-0x0a9c ~ 0x0b9b:	0x100       font #6 glyphs widths
+0x059c ~ 0x069b:        0x100       font #1 glyphs widths
+0x069c ~ 0x079b:        0x100       font #2 glyphs widths
+0x079c ~ 0x089b:        0x100       font #3 glyphs widths
+0x089c ~ 0x099b:        0x100       font #4 glyphs widths
+0x099c ~ 0x0a9b:        0x100       font #5 glyphs widths
+0x0a9c ~ 0x0b9b:        0x100       font #6 glyphs widths
 
-0x0b9c ~ 0x0f9b:	0x400       font 1 offsets of each glyph; 0000 means beginning of glyph data, not of lbx resource.
-0x0f9c ~ 0x139b:	0x400       font 2 offsets of each glyph; 0000 means beginning of glyph data, not of lbx resource.
-0x139c ~ 0x179b:	0x400       font 3 offsets of each glyph; 0000 means beginning of glyph data, not of lbx resource.
-0x179c ~ 0x1b9b:	0x400       font 4 offsets of each glyph; 0000 means beginning of glyph data, not of lbx resource.
-0x1b9c ~ 0x1f9b:	0x400       font 5 offsets of each glyph; 0000 means beginning of glyph data, not of lbx resource.
-0x1f9c ~ 0x239b:	0x400       font 6 offsets of each glyph; 0000 means beginning of glyph data, not of lbx resource.
+0x0b9c ~ 0x0f9b:        0x400       font 1 offsets of each glyph; 0000 means beginning of glyph data, not of lbx resource.
+0x0f9c ~ 0x139b:        0x400       font 2 offsets of each glyph; 0000 means beginning of glyph data, not of lbx resource.
+0x139c ~ 0x179b:        0x400       font 3 offsets of each glyph; 0000 means beginning of glyph data, not of lbx resource.
+0x179c ~ 0x1b9b:        0x400       font 4 offsets of each glyph; 0000 means beginning of glyph data, not of lbx resource.
+0x1b9c ~ 0x1f9b:        0x400       font 5 offsets of each glyph; 0000 means beginning of glyph data, not of lbx resource.
+0x1f9c ~ 0x239b:        0x400       font 6 offsets of each glyph; 0000 means beginning of glyph data, not of lbx resource.
 
-0x239c ~			    font 1 data
+0x239c ~                            font 1 data
                                     font data is a sequence of bytes meaning the following:
                                     0x00-0x7f: color of next pixel
                                     0x80: skip to beginning of next line
@@ -551,7 +551,7 @@ class Font(object):
         glyph = self.get_glyph(glyph_id)
 
         print("=== glyph %i ... %s ===" % (glyph_id, chr(glyph_id)))
-        print("	width = %i" % glyph['width'])
+        print("    width = %i" % glyph['width'])
         print("    data size = %i" % len(glyph['data']))
 
         for row in glyph['data']:
@@ -567,7 +567,7 @@ class Font(object):
         for glyph_id in range(65, 91):
             self.debug_glyph(glyph_id, ascii_palette)
 
-    def debug_write(self, text, ascii_palette = " 12345678", letter_spacing = 2	):
+    def debug_write(self, text, ascii_palette = " 12345678", letter_spacing = 2):
         glyphs = {}
         width = 0
         height = 0
@@ -633,7 +633,9 @@ class Font(object):
             ord_c = ord(c)
             if ord_c > 0:
                 width += self.get_glyph_width(ord_c) + letter_spacing
-                height = max(height, self.get_glyph_height(ord_c))
+                # Ignore space height... it is too big (full height + subtend)
+                if ord_c != ord(' '):
+                    height = max(height, self.get_glyph_height(ord_c))
         surface = pygame.Surface((width, height))
         surface.set_colorkey(0x000000)
         self.write_text(surface, 0, 0, text, palette, letter_spacing)

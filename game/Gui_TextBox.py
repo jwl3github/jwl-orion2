@@ -1,5 +1,6 @@
 import pygame
 import Gui_Screen
+from Data_CONST import *
 
 # ==============================================================================
 class Gui_TextBox(Gui_Screen.Gui_Screen):
@@ -42,12 +43,12 @@ class Gui_TextBox(Gui_Screen.Gui_Screen):
         self.blit_image((x, y1),  'text_box','middle')  # JWL: what is temp_r ???
         self.blit_image((x, y2),  'text_box','bottom')
 
-        self.write_text(K_FONT5, LIGHT_TEXT_PALETTE, x + 120, y + 20, title)
+        self.write_text(K_FONT5, K_PALETTE_LIGHT_TEXT, x + 120, y + 20, title)
 
         lheight = 40
         for i in range(len(lines)):
         #   TODO: some intelligent way of justifying the lines, so the output resembles the original game
-            self.write_text(K_FONT3, DARK_TEXT_PALETTE, x + 40, y + lheight, lines[i])
+            self.write_text(K_FONT3, K_PALETTE_DARK_TEXT, x + 40, y + lheight, lines[i])
             lheight += 15
 
         self.reset_triggers_list()

@@ -1,8 +1,9 @@
 import copy
 import pygame
+import Data_BUILDINGS
 import Gui_Screen
+import Network_Client
 from Data_CONST import *
-
 # ==============================================================================
 class Gui_ColonyProductionScreen(Gui_Screen.Gui_Screen):
 # ------------------------------------------------------------------------------
@@ -120,7 +121,7 @@ class Gui_ColonyProductionScreen(Gui_Screen.Gui_Screen):
                     continue
 
                 production_name = RULES['buildings'][production_id]['name']
-                label = font4.render(production_name, light_text_palette, 2)
+                label = self.render(K_FONT4, K_PALETTE_LIGHT_TEXT, production_name, 2)
                 xx = (250 - label.get_width()) / 2
                 self.blit(label, (208 + xx, y))
                 hover_id = "queue:%i" % i
@@ -195,6 +196,6 @@ class Gui_ColonyProductionScreen(Gui_Screen.Gui_Screen):
         Network_Client.Client.set_colony_build_queue(self.i_colony_id, self.o_colony.v_build_queue)
 # ------------------------------------------------------------------------------
     def leave_cancel(self):
-        self.o_colony.set_build_queue(self.__old_build_queue)
+        self.o_colony.v_build_queue = self.__old_build_queue
 # ------------------------------------------------------------------------------
 Screen = Gui_ColonyProductionScreen()

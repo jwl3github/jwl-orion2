@@ -32,7 +32,7 @@ class Game_Player(Game_Object.Game_Object):
         self.d_racepicks            = {}
         # Derived
         self.i_used_command         = 0
-        self.v_research_areas       = []
+        self.v_research_areas       = None
         self.i_research_cost        = 0
         self.i_research_turns_left  = 0
         self.v_explored_star_ids    = []
@@ -106,12 +106,6 @@ class Game_Player(Game_Object.Game_Object):
     def raise_bc(self):
         self.i_bc += self.i_bc_income
 # ------------------------------------------------------------------------------
-    def add_food(self, i_food):
-        self.i_food += i_food
-# ------------------------------------------------------------------------------
-    def add_research(self, i_research):
-        self.i_research += i_research
-# ------------------------------------------------------------------------------
     def raise_research(self):
         self.i_research_progress += self.i_research
 # ------------------------------------------------------------------------------
@@ -151,7 +145,7 @@ class Game_Player(Game_Object.Game_Object):
 
         for i_building_id, d_building in RULES['buildings'].items():
             if (d_building['tech'] == 0) or (d_building['tech'] in self.v_known_techs):
-                print 'Player allowed: <%s> <%s> <%d>' % (d_building['type'], d_building['name'], i_building_id)
+                #print 'Player allowed: <%s> <%s> <%d>' % (d_building['type'], d_building['name'], i_building_id)
                 d_allowed[d_building['type']][d_building['name']] = i_building_id
 
         # Create the allowed production table, initially indexed by production
@@ -212,7 +206,7 @@ class Game_Player(Game_Object.Game_Object):
                    '\nself.v_tributes            = ' + str(self.v_tributes)             +  \
                    '\nself.d_racepicks           = ' + str(self.d_racepicks)
         s_serial = s_fixed + s_often # + s_rare
-        #print s_serial
+        print s_serial
         return s_serial
 # ------------------------------------------------------------------------------
     def unserialize(self, s_serial):

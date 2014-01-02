@@ -43,7 +43,7 @@ class Moo2_Savegame(object):
             t_fields  = struct.unpack_from(s_fmt, v_data, i_offset+i_rel_offset)
             if s_name != '':
                 if s_fmt.endswith('s'):
-                    d_struct[s_name] = t_fields[0]
+                    d_struct[s_name] = t_fields[0].split('\0')[0].rstrip()
                 elif len(s_fmt) == 1:  # No preceding count.
                     d_struct[s_name] = t_fields[0]
                 else:

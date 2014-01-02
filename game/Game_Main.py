@@ -68,6 +68,7 @@ class Game_Main(object):
                 if self.d_planets.has_key(i_object_id):
                     i_num += 1
                     self.d_planets[i_object_id].i_position = i_num
+                    self.d_planets[i_object_id].s_name = '%s %i' % (d_star.s_name, i_num)
                 elif i_object_id != 0xffff:
                     print 'WARNING: init_stars -- ignoring invalid planet object id: %d' % i_object_id
 # ------------------------------------------------------------------------------
@@ -80,11 +81,9 @@ class Game_Main(object):
         # Perform extra cross-indexing / info caching.
         for i_id, d_colony in self.d_colonies.items():
             if d_colony.i_owner_id < 0xff:
-                d_planet          = self.d_planets[d_colony.i_planet_id]
-                d_colony.o_planet = d_planet
-                s_star_name       = self.d_stars[d_planet.i_star_id].s_name
-                i_planet_pos      = d_planet.i_position
-                d_colony.s_name   = '%s %i' % (s_star_name, i_planet_pos)
+                o_planet          = self.d_planets[d_colony.i_planet_id]
+                d_colony.o_planet = o_planet
+                d_colony.s_name   = o_planet.s_name
 # ------------------------------------------------------------------------------
     def init_heroes(self):
         # Transfer generic loaded data into game memory object.
@@ -110,10 +109,11 @@ class Game_Main(object):
             self.d_players[i_id].construct(d_struct)
 
         # Perform extra cross-indexing / info caching.
-        for i_player_id, d_player in self.d_players.items():
-            for i_star_id, d_star in self.d_stars.items():
-                if d_star.visited_by_player(i_player_id):
-                    d_player.add_explored_star_id(i_star_id)
+        for i_player_id, o_player in self.d_players.items():
+            self.determine_player_research_areas(o_player)
+            for i_star_id, o_star in self.d_stars.items():
+                if o_star.visited_by_player(i_player_id):
+                    o_player.add_explored_star_id(i_star_id)
 # ------------------------------------------------------------------------------
     def init_ships(self):
         # Transfer generic loaded data into game memory object.
@@ -170,7 +170,7 @@ class Game_Main(object):
             o_player.determine_allowed_production(self.d_rules)
 
         for colony_id, colony in self.d_colonies.items():
-            print("Game::recount_colonies() ... colony_id = %i" % colony_id)
+            print("Game_Main::recount_colonies() ... colony_id = %i" % colony_id)
             if colony.exists():
                 governor = self.get_governor(colony_id)
                 colony.recount(self.d_rules, governor, self.d_players)
@@ -201,102 +201,90 @@ class Game_Main(object):
     def list_player_governors(self, i_player_id):
         return self.list_player_heroes(i_player_id, K_HERO_GOVERNOR)
 # ------------------------------------------------------------------------------
-    def update_research(self, i_player_id, i_tech_id):
-        print("Game::update_research() ... player_id = %i, tech_id = %i" % (i_player_id, i_tech_id))
-        o_player = self.d_players[i_player_id]
-        o_player.research_tech_id     = i_tech_id
-        o_player.research_area        = self.d_rules['tech_table'][i_tech_id]['area']
-        o_player.research_cost        = Game_Rules.research_costs(self.d_rules['research_areas'], o_player.i_research_area, o_player.i_research)
-        o_player.research_turns_left  = Game_Rules.research_turns(o_player.i_research_cost, o_player.i_research_progress, o_player.i_research)
-        return True
+    def update_player_research(self, o_player):
+        print("@ game::update_player_research() - cost = %d" % o_player.i_research_cost)
+        if o_player.i_research_cost > 0:
+            o_player.raise_research()
+            if o_player.research_completed():
+                print "research completed"
+                print o_player.v_known_techs
+                print o_player.i_research_tech_id
+                o_player.add_known_technology(o_player.i_research_tech_id)
+                o_player.i_research_progress = 0
+                o_player.v_research_areas = None
+                self.update_research(o_player.i_player_id, 0)
+                self.determine_player_research_areas(o_player)
 # ------------------------------------------------------------------------------
-    def set_colony_build_queue(self, i_player_id, i_colony_id, build_queue):
+    def update_research(self, i_player_id, i_tech_id):
+        print("Game_Main::update_research() ... player_id = %i, tech_id = %i" % (i_player_id, i_tech_id))
+        o_player = self.d_players[i_player_id]
+        o_player.i_research_tech_id     = i_tech_id
+        o_player.i_research_area        = self.d_rules['tech_table'][i_tech_id]['area']
+        o_player.i_research_cost        = Game_Rules.research_costs(self.d_rules['research_areas'], o_player.i_research_area, o_player.i_research)
+        o_player.i_research_turns_left  = Game_Rules.research_turns(o_player.i_research_cost, o_player.i_research_progress, o_player.i_research)
+        return True   # Checked by Network_Server
+# ------------------------------------------------------------------------------
+    def determine_player_research_areas(self, o_player):
+        # Determine the player's upcoming research area by checking
+        # for a known tech in the progressive area of each tech
+        # category until none is found.
+        research_areas = {}
+        for res_id in self.d_rules['research']:
+            area_id = self.d_rules['research'][res_id]['start_area']
+            #print "                         AREA: %s" % res_id
+            #print "                         start_area = %i" % area_id
+            while self.d_rules['research_areas'][area_id]['next']:
+                #print "      checking area_id = %i" % area_id
+                area_techs = self.list_area_tech_ids(area_id)
+                #print "          area_techs = %s" % str(area_techs)
+                new_area_id = 0
+                for tech_id in area_techs:
+                    if o_player.knows_technology(tech_id):
+                        #print "known tech! ... %i .. moving to next area" % tech_id
+                        new_area_id = self.d_rules['research_areas'][area_id]['next']
+                        break
+                if new_area_id:
+                    area_id = new_area_id
+                else:
+                    break
+            research_areas[res_id] = self.list_area_tech_ids(area_id)
+        o_player.v_research_areas = research_areas
+# ------------------------------------------------------------------------------
+    def set_colony_build_queue(self, i_player_id, i_colony_id, v_build_queue):
         """ Sets a new build queue for a given colony_id owned by player_id
 
         """
-        print("@ Game::set_colony_build_queue()")
-        print("    colony_id: %i" % colony_id)
-        print("    build_queue: %s" % str(build_queue))
-        if self.colony_owned_by(i_colony_id, i_player_id):
-            # TODO: validate the build queue:
-            #           all items must be available based on known technologies?
-            #           buildings can't be already present - remove duplicates or just fail?
-            #           check terraforming
-            #           check gravity generator
-            #           check artifical planet
-            #           check star system unique items (star gate, artemis ...)
-            #           what else?
-            #           IF ANY ERROR OCCURS DURING ABOVE CHECKS, METHOD SHOULD NOT SET THE NEW QUEUE BUT RETURN FALSE TO PREVENT CONFUSION
-            self.d_colonies[i_colony_id].set_build_queue(build_queue)
-            return True
-
-        return False
-
+        print("@ Game_Main::set_colony_build_queue()")
+        print("    colony_id: %i" % i_colony_id)
+        print("    build_queue: %s" % str(v_build_queue))
+        if not self.colony_owned_by(i_colony_id, i_player_id):
+            return False
+        # TODO: <security> validate the build queue based on colony's allowed buildings
+        self.d_colonies[i_colony_id].v_build_queue = v_build_queue
+        return True
 # ------------------------------------------------------------------------------
     def recount_players(self):
         print "=== Recount Players ==="
 
         # Calculate each player's global balance for food and research.
         for i_player_id, o_player in self.d_players.items():
-            o_player.research = 0
-            o_player.food     = 0
+            o_player.i_research = 0
+            o_player.i_food     = 0
 
         for i_colony_id, o_colony in self.d_colonies.items():
             if o_colony.exists():
                 o_player = self.d_players[o_colony.i_owner_id]
-                o_player.add_research(o_colony.i_research)
-                o_player.add_food(o_colony.i_food - o_colony.total_population())
-
-        ### JWL: Each player should have dirty tech flag (i.e. research completed)
+                o_player.i_research += o_colony.i_research
+                o_player.i_food     += o_colony.i_food - o_colony.total_population()
 
         for i_player_id in range(K_MAX_PLAYERS):
             o_player = self.d_players[i_player_id]
             if o_player.alive():
                 self.update_research(i_player_id, o_player.i_research_tech_id)
-
-            # Determine the player's upcoming research area by checking
-            # for a known tech in the progressive area of each tech
-            # category until none is found.
-            research_areas = {}
-            for res_id in self.d_rules['research']:
-                area_id = self.d_rules['research'][res_id]['start_area']
-                #print "                         AREA: %s" % res_id
-                #print "                         start_area = %i" % area_id
-                while 1:
-                    #print "      checking area_id = %i" % area_id
-                    if not self.d_rules['research_areas'][area_id]['next']:
-                        break
-
-                    area_techs = self.list_area_tech_ids(area_id)
-                    #print "          area_techs = %s" % str(area_techs)
-                    new_area_id = 0
-                    for tech_id in area_techs:
-                        if o_player.knows_technology(tech_id):
-                            #print "known tech! ... %i .. moving to next area" % tech_id
-                            new_area_id = self.d_rules['research_areas'][area_id]['next']
-                            break
-
-                    if new_area_id:
-                        area_id = new_area_id
-                    else:
-                        break
-
-                research_areas[res_id] = self.list_area_tech_ids(area_id)
-            o_player.update_research_areas(research_areas)
-            #print "                    research_areas = %s" % str(player['research_areas'])
-            #for tech_id in player['known_techs']:
-            #    tech = self.d_rules['tech_table'][tech_id]
-            #    print "                         known = %s (area: %i)" % (tech['name'], tech['area'])
-            # / refresh player's research_areas
-# ------------------------------------------------------------------------------
-    def recount(self):
-        self.recount_heroes()
-        self.recount_colonies()
-        self.recount_players()
 # ------------------------------------------------------------------------------
     def raise_population(self):
         for i_colony_id, o_colony in self.d_colonies.items():
-            o_colony.raise_population()
+            o_colony.raise_population(self.d_players)
 # ------------------------------------------------------------------------------
     def get_stars_for_player(self, i_player_id):
         """ Returns a dictionary of all stars in galaxy.
@@ -433,24 +421,10 @@ class Game_Main(object):
             else:
                 print 'No build_item (industry %d [total: %d]) ==>' % (colony.i_industry, build_total)
 # ------------------------------------------------------------------------------
-    def update_player_research(self, player):
-        if player.i_research_cost > 0:
-            player.raise_research()
-            if player.research_completed():
-                print "research completed"
-                print player.known_techs
-                print player.research_tech_id
-                player.add_known_technology(player.research_tech_id)
-                research_area_id = player.research_area
-                if research_area_id:
-                    research_area = self.d_rules['research_areas'][research_area_id]
-                    if research_area['next']:
-                        player.research_area = research_area['next']
-                player.research_progress = 0
-                player.research_tech_id = 0
-            else:
-                print "research not completed yet"
-#### JWL: Need to query user for new research via research_screen popup.
+    def recount(self):
+        self.recount_heroes()
+        self.recount_colonies()
+        self.recount_players()
 # ------------------------------------------------------------------------------
     def next_turn(self):
         print

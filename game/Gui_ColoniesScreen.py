@@ -98,7 +98,7 @@ class Gui_ColoniesScreen(Gui_Screen.Gui_Screen):
 
                 for ii in range(c):
                     colonist = colony.d_colonists[t][ii]
-                    race     = colonist['race']
+                    race     = colonist.race
                     picture  = PLAYERS[race].i_picture
                     self.draw_image_by_key((x + (xx * ii), y), 'race_icon', picture, icon)
 # ------------------------------------------------------------------------------

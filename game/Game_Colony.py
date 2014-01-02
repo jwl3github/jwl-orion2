@@ -199,10 +199,7 @@ class Game_Colony(Game_Object.Game_Object):
         self.i_pollution      = 0
         self.i_industry       = 0
         self.i_research       = 0
-        self.food_summary     = {}
-        self.industry_summary = {}
-        self.research_summary = {}
-
+        self.d_prod_summary   = {}
 # ------------------------------------------------------------------------------
     def recount(self, RULES, colony_leader, PLAYERS):
         """
@@ -242,37 +239,39 @@ class Game_Colony(Game_Object.Game_Object):
     def print_info(self):
         print "  owner_id: %i" % self.i_owner_id
 # ------------------------------------------------------------------------------
-    def display_summary(self, title, foot, summary):
-        v_summary = []
-        total = rules.count_summary_result(summary)
+    def display_summary(self, s_prefix):
+        v_summary = []  # Used by the GUI for popup display.
+        s_title = s_prefix + ' summary'
+        s_total = s_prefix + '_total'
         print("+----------------------------------------------------+")
-        print("+ %s +" % title.ljust(50))
+        print("+ %s +" % s_title.ljust(50))
         print("+ ================================================== +")
-        for k in summary:
-            if summary[k]:
-                print("+ %s ... %s +" % (str(summary[k]).rjust(6), k.ljust(39)))
-                v_summary.append("%s   %s" % (str(summary[k]).rjust(6), k.ljust(39)))
+        for key in sorted(self.d_prod_summary.keys()):
+            if key.startswith(s_prefix) and not key.endswith('_total'):
+                value = self.d_prod_summary[key]
+                print("+ %s ... %s +" % (str(value).rjust(6), key.ljust(39)))
+                v_summary.append("%s   %s" % (str(value).rjust(6), key.ljust(39)))
         print("+                                                    +")
-        print("+ % 6i ... %s +" % (total, foot.ljust(39)))
+        print("+ %6i ... %s +" % (self.d_prod_summary[s_total], s_total.ljust(39)))
         print("+----------------------------------------------------+")
         v_summary.append(' ')
-        v_summary.append("% 6i ... %s" % (total, foot.ljust(39)))
+        v_summary.append("%6i ... %s" % (self.d_prod_summary[s_total], s_total.ljust(39)))
         return v_summary
 # ------------------------------------------------------------------------------
     def print_morale_summary(self):
-        return self.display_summary("Morale Summary", "Total", self.morale_summary)
+        return self.display_summary('morale')
 # ------------------------------------------------------------------------------
     def print_bc_summary(self):
-        return self.display_summary("BC Summary", "Total Income", self.bc_summary)
+        return self.display_summary('bc')
 # ------------------------------------------------------------------------------
     def print_food_summary(self):
-        return self.display_summary("Food Summary", "Total Food Produced", self.food_summary)
+        return self.display_summary('food')
 # ------------------------------------------------------------------------------
     def print_industry_summary(self):
-        return self.display_summary("Industry Summary", "Total Industry Produced", self.industry_summary)
+        return self.display_summary('industry')
 # ------------------------------------------------------------------------------
     def print_research_summary(self):
-        return self.display_summary("Research Summary", "Research Industry Produced", self.research_summary)
+        return self.display_summary('research')
 # ------------------------------------------------------------------------------
     def debug_production(self, rules):
         print("    @ colony::debug_production()... colony_id = %i" % self.i_id)

@@ -8,8 +8,8 @@ from Data_CONST import *
 WORKER_BASE_BY_PLANET_MINERALS = { 0:1, 1:2, 2:3, 3:5, 4:8, }
 
 PLANETS_SPECIALS = {
-    Data_CONST.K_SPECIAL_ARTIFACTS: {'research_bonus': +2},
-    Data_CONST.K_SPECIAL_GOLD:      {'bc_bonus':       +50.0},
+    K_SPECIAL_ARTIFACTS: {'research_bonus': +2},
+    K_SPECIAL_GOLD:      {'bc_bonus':       +50.0},
 }
 
 DEFAULT_RULES = {
@@ -69,31 +69,39 @@ def get_hero_bonus(hero, skill_name):
     return 0.0
 # ------------------------------------------------------------------------------
 def colonist_food_base(colonist, colonist_player, planet, food_per_farmer):
-    ### JWL: TODO I forget, do Natives and Androids have a fixed food base?
-    # if colonist['android']: return K_ANDROID_FOOD_BASE  # 2.0?
-    # if colonist['native']:  return K_NATIVES_FOOD_BASE  # 2.0?
-    # if colonist['rioting']: return min(K_RIOTERS_FOOD_BASE, planet.i_foodbase)  # 1.0?
+    ### JWL: TODO I forget, do Natives and Androids have a fixed base?
+    # if colonist.android: return K_ANDROID_FOOD_BASE  # 2.0?
+    # if colonist.native:  return K_NATIVES_FOOD_BASE  # 2.0?
+    # if colonist.rioting: return min(K_RIOTERS_FOOD_BASE, planet.i_foodbase)  # 1.0?
     b_is_aquatic_planet = (planet.i_terrain in [K_TERRAIN_OCEAN, K_TERRAIN_TERRAN])
     colonist_food = planet.i_foodbase
     if b_is_aquatic_planet and colonist_player.get_racepick_item('aquatic'):
         colonist_food += 1
-    return colonist_food * (colonist_player.get_racepick_item('food') + 100.0)
+    return colonist_food * (colonist_player.get_racepick_item('food') + 100.0) / 100.0
 # ------------------------------------------------------------------------------
 def colonist_industry_base(RULES, colonist, colonist_player, planet, industry_per_worker):
-    ### JWL: TODO I forget, do Androids have a fixed industry base?
-    # if colonist['android']: return 2.0
-    # Note: natives and rioters cannot be workers, so no check done here.
-
+    # Note: natives and rioters can only be farmers, so no check done here.
+    ### JWL: TODO I forget, do Androids have a fixed base?
+    # if colonist.android: return K_ANDROID_RESEARCH_BASE
     colonist_industry = RULES['worker_base'][planet.i_minerals]
-    return colonist_industry * (colonist_player.get_racepick_item('industry') + 100.0)
+    return colonist_industry * (colonist_player.get_racepick_item('industry') + 100.0) / 100.0
+# ------------------------------------------------------------------------------
+def colonist_research_base(RULES, colonist, colonist_player, planet, research_per_scientist):
+    # Note: natives and rioters can only be farmers, so no check done here.
+    ### JWL: TODO I forget, do Androids have a fixed base?
+    # if colonist['android']: return K_ANDROID_RESEARCH_BASE
+    colonist_research = research_per_scientist
+    if planet.has_artifacts():
+        colonist_research += RULES['planets_specials'][K_SPECIAL_ARTIFACTS]['research_bonus']
+    return colonist_research * (colonist_player.get_racepick_item('research') + 100.0) / 100.0
 # ------------------------------------------------------------------------------
 def colonist_morale_mult(colonist, morale_total):
-    # if colonist['android']: return 1.0
-    # if colonist['rioting']: return 1.0
+    if colonist.android: return 1.0
+    if colonist.rioting: return 1.0
     return morale_total / 100.0
 # ------------------------------------------------------------------------------
 def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
-
+    ''' Determine the production summaries and totals for all areas. '''
     morale_base              = 0
     morale_bonus_gov         = 0
     morale_bonus_hero        = 0
@@ -124,17 +132,12 @@ def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
     research_bonus_planet    = 0
     research_total           = 0
 
-    print("=== compute_prod_summary ===")
+    print("=== compute_prod_summary === " + colony.s_name)
 
     o_owner               = PLAYERS[colony.i_owner_id]
     i_owner_goverment     = o_owner.get_racepick_item('goverment')
     i_num_colonists       = colony.total_population()
     b_has_gravity_gen     = colony.has_building(Data_BUILDINGS.B_GRAVITY_GENERATOR)
-
-    print colony.v_building_ids
-    print i_owner_goverment
-    print i_num_colonists
-    print b_has_gravity_gen
 
     for b_id in colony.v_building_ids:
         d_building = RULES['buildings'][b_id]
@@ -195,6 +198,7 @@ def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
 
     food_total      = (food_base + food_per_colony + food_gravity) * \
                       (100.0 + food_bonus_gov + food_bonus_hero) / 100.0
+    food_total      = int(food_total + 0.5)
 
     print("food_gravity             = %s" % food_gravity)
     print("food_base                = %s" % food_base)
@@ -223,6 +227,7 @@ def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
 
     industry_pollution = count_colony_pollution(RULES, colony, colony_leader, industry_total, PLAYERS)
     industry_total    -= industry_pollution
+    industry_total     = int(industry_total + 0.5)
 
     print("industry_pollution           = %s" % industry_pollution)
     print("industry_gravity             = %s" % industry_gravity)
@@ -239,7 +244,7 @@ def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
 
     for colonist in colony.d_colonists[K_SCIENTIST]:
         colonist_player    = PLAYERS[colonist.race]
-        colonist_research  = colonist_industry_base(RULES, colonist, colonist_player, colony.o_planet, research_per_scientist)
+        colonist_research  = colonist_research_base(RULES, colonist, colonist_player, colony.o_planet, research_per_scientist)
         colonist_research *= colonist_morale_mult(colonist, morale_total)
         research_base     += colonist_research
         research_gravity  += colonist_research * colonist.get_gravity_penalty(colony.o_planet, b_has_gravity_gen)
@@ -250,6 +255,7 @@ def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
 
     research_total = (research_base + research_per_colony + research_gravity) * \
                       (100.0 + research_bonus_gov + research_bonus_hero + research_bonus_planet) / 100.0
+    research_total = int(research_total + 0.5)
 
     print("research_gravity             = %s" % research_gravity)
     print("research_base                = %s" % research_base)
@@ -263,6 +269,9 @@ def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
     # ---------------------------------------------------------------------------
     # Finish BC computation
     # ---------------------------------------------------------------------------
+
+    # TODO
+
 
     # ---------------------------------------------------------------------------
     # Compose summary
@@ -448,9 +457,11 @@ def research_costs(research_areas, area, rp):
         return research_areas[area]['cost']
 # ------------------------------------------------------------------------------
 def research_turns(cost, progress, rp):
-    turns = -1
     if rp > 0:
         turns = int(math.ceil((float(cost) - float(progress)) / float(rp)))
+        turns = turns if turns > 0 else 0
+    else:
+        turns = -1
     print("rules::research_turns() ... cost <%d>  progress <%d>  rp <%d>  turns <%d>" % (cost,progress,rp,turns))
     return turns
 # ------------------------------------------------------------------------------

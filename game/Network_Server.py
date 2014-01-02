@@ -165,8 +165,6 @@ class Network_Server(object):
             # includes: 3. Database of hero names/attribs
             # includes: 4. Star chart with coords/colors/(names? - beware sharing Orion, unless bait-n-switch concept employed)
             data = self.get_update_for_player(player_id)
-            print 'type(data) ...'
-            print type(data)
             self.send_data_to_game_client(client_socket, thread_id, data)
 
         elif ACTION == "FETCH_GAME_DATA":
@@ -176,11 +174,11 @@ class Network_Server(object):
         elif ACTION == "SET_RESEARCH":
             i_tech_id = PARAMS['tech_id']
             if not self.o_game.update_research(player_id, i_tech_id):
-                self.log_error("Game::set_research() failed ... player_id = %i, i_tech_id = %i" % (player_id, i_tech_id))
+                self.log_error("Network_Server::set_research() failed ... player_id = %i, i_tech_id = %i" % (player_id, i_tech_id))
 
         elif ACTION == "SET_BUILD_QUEUE":
             if not self.o_game.set_colony_build_queue(player_id, PARAMS['colony_id'], PARAMS['build_queue']):
-                self.log_error("Game::set_colony_build_queue() failed ... player_id = %i, colony_id = %i" % (player_id, PARAMS['colony_id']))
+                self.log_error("Network_Server::set_colony_build_queue() failed ... player_id = %i, colony_id = %i" % (player_id, PARAMS['colony_id']))
 
         else:
             self.log_error("unknow action received from client: '%s'" % data)
