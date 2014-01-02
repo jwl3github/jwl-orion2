@@ -202,7 +202,7 @@ class Game_Main(object):
         return self.list_player_heroes(i_player_id, K_HERO_GOVERNOR)
 # ------------------------------------------------------------------------------
     def update_player_research(self, o_player):
-        print("@ game::update_player_research() - cost = %d" % o_player.i_research_cost)
+        print("@ Game_Main::update_player_research() - cost = %d" % o_player.i_research_cost)
         if o_player.i_research_cost > 0:
             o_player.raise_research()
             if o_player.research_completed():
@@ -283,8 +283,11 @@ class Game_Main(object):
                 self.update_research(i_player_id, o_player.i_research_tech_id)
 # ------------------------------------------------------------------------------
     def raise_population(self):
+        v_player_recount = []
         for i_colony_id, o_colony in self.d_colonies.items():
-            o_colony.raise_population(self.d_players)
+            if o_colony.raise_population(self.d_players):
+                governor = self.get_governor(colony_id)
+                colony.recount(self.d_rules, governor, self.d_players)
 # ------------------------------------------------------------------------------
     def get_stars_for_player(self, i_player_id):
         """ Returns a dictionary of all stars in galaxy.
@@ -349,7 +352,7 @@ class Game_Main(object):
             TODO: slowdown in nebulae
             TODO: usage of wormholes, jump gate and star gate
         """
-        print("@ game::move_ships()")
+        print("@ Game_Main::move_ships()")
         for ship_id, ship in self.d_ships.items():
             # if ship exists and is launching or already travelling
             if ship.exists() and ship.i_status in (1, 2):
@@ -394,10 +397,10 @@ class Game_Main(object):
             TODO: implement real production cost
 
         """
-        print("@ game::colonies_production()")
+        print("@ Game_Main::colonies_production()")
         for colony_id, colony in self.d_colonies.items():
-            colony.debug_production(self.d_rules)
-            print(colony.v_building_ids)
+            #colony.debug_production(self.d_rules)
+            #print(colony.v_building_ids)
             build_item  = colony.get_build_item()
             industry    = colony.i_industry
             build_total = colony.update_industry_progress()
@@ -416,8 +419,8 @@ class Game_Main(object):
                     colony.add_building(production_id)
                     colony.remove_build_item(production_id)
                     colony.reset_industry_progress()
-                colony.debug_production(self.d_rules)
-                print(colony.v_building_ids)
+                #colony.debug_production(self.d_rules)
+                #print(colony.v_building_ids)
             else:
                 print 'No build_item (industry %d [total: %d]) ==>' % (colony.i_industry, build_total)
 # ------------------------------------------------------------------------------
@@ -432,25 +435,29 @@ class Game_Main(object):
         print "#    NEW TURN!"
         print "##"
         print
-
         sc = debug_timing(0, '')
         self.recount()
         sc = debug_timing(sc, 'game.recount')
+
         self.move_ships()
         sc = debug_timing(sc, 'game.move_ships')
+
         self.colonies_production()
         sc = debug_timing(sc, 'game.colonies_production')
 
-        for i_player_id, o_player in self.d_players.items():
-            if o_player.alive():
-                self.update_player_research(o_player)
-                o_player.raise_bc()
-
+        for i_player_id in range(K_MAX_PLAYERS):
+            if self.d_players[i_player_id].alive():
+                self.update_player_research(self.d_players[i_player_id])
+                self.d_players[i_player_id].raise_bc()
         sc = debug_timing(sc, 'game.[player research/bc]')
+
         self.raise_population()
         sc = debug_timing(sc, 'game.raise_population')
-        self.recount()
-        sc = debug_timing(sc, 'game.recount (part 2)')
+
+        # Except in early game, some colony somewhere is likely to change its
+        # population count each turn.  For simplicity, recount all players again.
+        self.recount_players()
+        sc = debug_timing(sc, 'game.recount_players (part 2)')
         self.d_galaxy['stardate'] += 1
 # ------------------------------------------------------------------------------
     def count_players(self):

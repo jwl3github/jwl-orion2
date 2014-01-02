@@ -132,7 +132,7 @@ def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
     research_bonus_planet    = 0
     research_total           = 0
 
-    print("=== compute_prod_summary === " + colony.s_name)
+    print("=== Game_Rules.compose_prod_summary === " + colony.s_name)
 
     o_owner               = PLAYERS[colony.i_owner_id]
     i_owner_goverment     = o_owner.get_racepick_item('goverment')
@@ -176,12 +176,12 @@ def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
     morale_total = 100.0 + morale_base + morale_bonus_gov + morale_bonus_building + \
                    morale_bonus_tech + morale_bonus_hero
 
-    print("morale_base              = %s" % morale_base)
-    print("morale_bonus_gov         = %s" % morale_bonus_gov)
-    print("morale_bonus_hero        = %s" % morale_bonus_hero)
-    print("morale_bonus_building    = %s" % morale_bonus_building)
-    print("morale_bonus_tech        = %s" % morale_bonus_tech)
-    print("morale_total             = %s" % morale_total)
+    #print("morale_base              = %s" % morale_base)
+    #print("morale_bonus_gov         = %s" % morale_bonus_gov)
+    #print("morale_bonus_hero        = %s" % morale_bonus_hero)
+    #print("morale_bonus_building    = %s" % morale_bonus_building)
+    #print("morale_bonus_tech        = %s" % morale_bonus_tech)
+    #print("morale_total             = %s" % morale_total)
 
     # ---------------------------------------------------------------------------
     # Finish FOOD computation
@@ -200,13 +200,13 @@ def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
                       (100.0 + food_bonus_gov + food_bonus_hero) / 100.0
     food_total      = int(food_total + 0.5)
 
-    print("food_gravity             = %s" % food_gravity)
-    print("food_base                = %s" % food_base)
-    print("food_per_farmer          = %s" % food_per_farmer)
-    print("food_per_colony          = %s" % food_per_colony)
-    print("food_bonus_gov           = %s" % food_bonus_gov)
-    print("food_bonus_hero          = %s" % food_bonus_hero)
-    print("food_total               = %s" % food_total)
+    #print("food_gravity             = %s" % food_gravity)
+    #print("food_base                = %s" % food_base)
+    #print("food_per_farmer          = %s" % food_per_farmer)
+    #print("food_per_colony          = %s" % food_per_colony)
+    #print("food_bonus_gov           = %s" % food_bonus_gov)
+    #print("food_bonus_hero          = %s" % food_bonus_hero)
+    #print("food_total               = %s" % food_total)
 
     # ---------------------------------------------------------------------------
     # Finish INDUSTRY computation
@@ -229,14 +229,14 @@ def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
     industry_total    -= industry_pollution
     industry_total     = int(industry_total + 0.5)
 
-    print("industry_pollution           = %s" % industry_pollution)
-    print("industry_gravity             = %s" % industry_gravity)
-    print("industry_base                = %s" % industry_base)
-    print("industry_per_worker          = %s" % industry_per_worker)
-    print("industry_per_colony          = %s" % industry_per_colony)
-    print("industry_bonus_gov           = %s" % industry_bonus_gov)
-    print("industry_bonus_hero          = %s" % industry_bonus_hero)
-    print("industry_total               = %s" % industry_total)
+    #print("industry_pollution           = %s" % industry_pollution)
+    #print("industry_gravity             = %s" % industry_gravity)
+    #print("industry_base                = %s" % industry_base)
+    #print("industry_per_worker          = %s" % industry_per_worker)
+    #print("industry_per_colony          = %s" % industry_per_colony)
+    #print("industry_bonus_gov           = %s" % industry_bonus_gov)
+    #print("industry_bonus_hero          = %s" % industry_bonus_hero)
+    #print("industry_total               = %s" % industry_total)
 
     # ---------------------------------------------------------------------------
     # Finish RESEARCH computation
@@ -257,14 +257,14 @@ def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
                       (100.0 + research_bonus_gov + research_bonus_hero + research_bonus_planet) / 100.0
     research_total = int(research_total + 0.5)
 
-    print("research_gravity             = %s" % research_gravity)
-    print("research_base                = %s" % research_base)
-    print("research_per_scientist       = %s" % research_per_scientist)
-    print("research_per_colony          = %s" % research_per_colony)
-    print("research_bonus_gov           = %s" % research_bonus_gov)
-    print("research_bonus_hero          = %s" % research_bonus_hero)
-    print("research_bonus_planet        = %s" % research_bonus_planet)
-    print("research_total               = %s" % research_total)
+    #print("research_gravity             = %s" % research_gravity)
+    #print("research_base                = %s" % research_base)
+    #print("research_per_scientist       = %s" % research_per_scientist)
+    #print("research_per_colony          = %s" % research_per_colony)
+    #print("research_bonus_gov           = %s" % research_bonus_gov)
+    #print("research_bonus_hero          = %s" % research_bonus_hero)
+    #print("research_bonus_planet        = %s" % research_bonus_planet)
+    #print("research_total               = %s" % research_total)
 
     # ---------------------------------------------------------------------------
     # Finish BC computation

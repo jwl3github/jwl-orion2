@@ -179,7 +179,7 @@ class Game_Colony(Game_Object.Game_Object):
         if self.i_owner_id == 0xff:
             print "owner is 0xff"
             return
-
+        b_pop_changed = False
         v_max_populations = self.v_max_populations
         for i_race in range(K_MAX_PLAYERS):
             self.v_pop_raised[i_race] += self.v_pop_grow[i_race]
@@ -189,6 +189,8 @@ class Game_Colony(Game_Object.Game_Object):
                 self.d_colonists[K_FARMER].append(colonist)
                 self.v_pop_raised[i_race] -= 1000
                 self.i_population += 1
+                b_pop_changed = True
+        return b_pop_changed
 # ------------------------------------------------------------------------------
     def total_population(self):
         #return len(self.d_colonists[K_FARMER]) + len(self.d_colonists[K_WORKER]) + len(self.d_colonists[K_SCIENTIST])
