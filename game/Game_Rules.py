@@ -38,10 +38,10 @@ def count_colony_pollution(RULES, colony, colony_leader, industry_total, PLAYERS
         if industry < 1.0:
             return 0
 
-    base_tolerance = K_PLANET_BASE_TOL[colony.o_planet.i_size]
+    base_tolerance = K_PLANET_TOL_BY_SIZE[colony.o_planet.i_size]
 
     for tech_id in PLAYERS[colony.i_owner_id].v_known_techs:
-        base_tolerance *= TECH_TABLE[tech_id]['industry_pollution_base_ratio']
+        base_tolerance *= RULES['tech_table'][tech_id]['industry_pollution_base_ratio']
 
     pollution = (industry - base_tolerance) / 2
     if pollution < 1.0:
@@ -52,8 +52,8 @@ def count_colony_pollution(RULES, colony, colony_leader, industry_total, PLAYERS
     tolerant_pop = 0
 
     for t in (K_FARMER, K_SCIENTIST, K_WORKER):
-        for colonist in colony.colonists[t]:
-            if colonist.android or players[colonist.i_race].get_racepick_item('tolerant'):
+        for colonist in colony.d_colonists[t]:
+            if colonist.android or PLAYERS[colonist.race].get_racepick_item('tolerant'):
                 tolerant_pop += 1
 
     pollution *= float(total_pop - tolerant_pop) / float(total_pop)
@@ -70,31 +70,22 @@ def get_hero_bonus(hero, skill_name):
 # ------------------------------------------------------------------------------
 def colonist_food_base(colonist, colonist_player, planet, food_per_farmer):
     ### JWL: TODO I forget, do Natives and Androids have a fixed food base?
-    # if colonist['android']: return 2.0
-    # if colonist['native']:  return 2.0
-    # if colonist['rioting']: return min(1.0, planet.i_foodbase)
+    # if colonist['android']: return K_ANDROID_FOOD_BASE  # 2.0?
+    # if colonist['native']:  return K_NATIVES_FOOD_BASE  # 2.0?
+    # if colonist['rioting']: return min(K_RIOTERS_FOOD_BASE, planet.i_foodbase)  # 1.0?
     b_is_aquatic_planet = (planet.i_terrain in [K_TERRAIN_OCEAN, K_TERRAIN_TERRAN])
     colonist_food = planet.i_foodbase
     if b_is_aquatic_planet and colonist_player.get_racepick_item('aquatic'):
         colonist_food += 1
     return colonist_food * (colonist_player.get_racepick_item('food') + 100.0)
 # ------------------------------------------------------------------------------
-def colonist_industry_base(colonist, colonist_player, planet, industry_per_worker):
-    i_worker_base = RULES['worker_base'][planet.get_minerals()]
-
+def colonist_industry_base(RULES, colonist, colonist_player, planet, industry_per_worker):
     ### JWL: TODO I forget, do Androids have a fixed industry base?
     # if colonist['android']: return 2.0
     # Note: natives and rioters cannot be workers, so no check done here.
 
-    industry_base            = 0
-    industry_per_worker      = 0
-    industry_per_colony      = 0
-    industry_bonus_gov       = 0
-    industry_bonus_hero      = 0
-    industry_bonus_tech      = 0
-    industry_bonus_gravity   = 0
-    industry_pollution       = 0
-    industry_total           = 0
+    colonist_industry = RULES['worker_base'][planet.i_minerals]
+    return colonist_industry * (colonist_player.get_racepick_item('industry') + 100.0)
 # ------------------------------------------------------------------------------
 def colonist_morale_mult(colonist, morale_total):
     # if colonist['android']: return 1.0
@@ -160,7 +151,7 @@ def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
 
     for tech_id in o_owner.v_known_techs:
         d_tech = RULES['tech_table'][tech_id]
-        morale_bonus_gov           = max(moral_bonus_gov, TECH_TABLE[tech_id]['morale_bonus_gov'][player_goverment])
+        morale_bonus_gov           = max(morale_bonus_gov, d_tech['morale_bonus_gov'][i_owner_goverment])
         morale_bonus_tech         += d_tech['morale_bonus']
         food_per_farmer           += d_tech['food_per_farmer']
         industry_per_worker       += d_tech['industry_per_worker']
@@ -219,7 +210,7 @@ def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
 
     for colonist in colony.d_colonists[K_WORKER]:
         colonist_player    = PLAYERS[colonist.race]
-        colonist_industry  = colonist_industry_base(colonist, colonist_player, colony.o_planet, industry_per_worker)
+        colonist_industry  = colonist_industry_base(RULES, colonist, colonist_player, colony.o_planet, industry_per_worker)
         colonist_industry *= colonist_morale_mult(colonist, morale_total)
         industry_base     += colonist_industry
         industry_gravity  += colonist_industry * colonist.get_gravity_penalty(colony.o_planet, b_has_gravity_gen)
@@ -248,7 +239,7 @@ def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
 
     for colonist in colony.d_colonists[K_SCIENTIST]:
         colonist_player    = PLAYERS[colonist.race]
-        colonist_research  = colonist_industry_base(colonist, colonist_player, colony.o_planet, research_per_scientist)
+        colonist_research  = colonist_industry_base(RULES, colonist, colonist_player, colony.o_planet, research_per_scientist)
         colonist_research *= colonist_morale_mult(colonist, morale_total)
         research_base     += colonist_research
         research_gravity  += colonist_research * colonist.get_gravity_penalty(colony.o_planet, b_has_gravity_gen)
@@ -417,7 +408,7 @@ def compose_pop_growth(RULES, colony, colony_leader, PLAYERS):
 
     f_tech_bonus = 0.0
     for i_tech_id in PLAYERS[colony.i_owner_id].v_known_techs:
-        f_tech_bonus += TECH_TABLE[i_tech_id]['pop_growth'] / 100.0
+        f_tech_bonus += RULES['tech_table'][i_tech_id]['pop_growth'] / 100.0
 
     for i_race in range(K_MAX_PLAYERS):
         i_race_pop = v_pop_by_race[i_race]

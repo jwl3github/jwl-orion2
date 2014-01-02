@@ -3,6 +3,7 @@ import Data_TECH
 K_MAX_PLAYERS             = 8
 K_MAX_WEAPONS_PER_SHIP    = 8
 K_MAX_STAR_OBJECTS        = 5
+K_MAX_BUILD_QUEUE         = 8
 
 K_SHIP_SIZE_SMALL         = 0
 K_SHIP_SIZE_MEDIUM        = 1

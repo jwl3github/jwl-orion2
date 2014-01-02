@@ -1,13 +1,6 @@
-B_ATMOSPHERE_RENEWER                =  5
-B_CORE_WASTE_DUMP                = 13
-B_BIOSPHERES                        = 15
-#B_HOLO_SIMULATOR                = 20
-#B_MARINE_BARRACKS                = 22
-B_GRAVITY_GENERATOR                = 25
-B_STOCK_EXCHANGE                = 29
-B_RECYCLOTRON                        = 33
-B_ROBOTIC_FACTORY                = 34
-B_SPACEPORT                        = 39
+B_CLONING_CENTER                = 10
+B_CORE_WASTE_DUMP               = 13
+B_GRAVITY_GENERATOR             = 25
 
 """
 B_NO_BUILDING                        =  0
@@ -19,7 +12,6 @@ B_AUTOLAB                        =  6
 B_AUTOMATED_FACTORY                =  7
 B_BATTLESTATION                        =  8
 B_CAPITOL                        =  9
-B_CLONING_CENTER                = 10
 B_COLONY_BASE                        = 11
 B_DEEP_CORE_MINE                = 12
 B_DIMENSIONAL_PORTAL                = 14

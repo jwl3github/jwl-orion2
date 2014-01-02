@@ -217,7 +217,7 @@ class Game_Colony(Game_Object.Game_Object):
         pops    = [0, 0, 0, 0, 0, 0, 0, 0]
         for t in [K_FARMER, K_WORKER, K_SCIENTIST]:
             for colonist in self.d_colonists[t]:
-                pops[colonist.i_race] += 1
+                pops[colonist.race] += 1
         return pops
 # ------------------------------------------------------------------------------
     def raise_population(self, PLAYERS):

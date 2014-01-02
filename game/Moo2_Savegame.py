@@ -187,7 +187,7 @@ class Moo2_Savegame(object):
     def parse_known_techs(self, offset):
         v_known_techs = []
         for i in range(203):               # original moo2 mas 203 usable technologies
-            i_tech_status = struct.unpack_from('B', self.file_data, offset + i)
+            i_tech_status = struct.unpack_from('B', self.file_data, offset + i)[0]
             if i_tech_status == Data_TECH.TECH_KNOWN:
                 v_known_techs.append(i + 1)
         return v_known_techs
@@ -284,7 +284,7 @@ class Moo2_Savegame(object):
             i_num_tributes = 7
             for ii in range(i_num_tributes):
                 i_offset2 = i_offset + 0x649 + (ii)
-                o_player['tributes'].append(struct.unpack_from('B', self.file_data, i_offset2))
+                o_player['tributes'].append(struct.unpack_from('B', self.file_data, i_offset2)[0])
 
             d_players[i_player_id] = o_player
 
@@ -405,9 +405,9 @@ class Moo2_Savegame(object):
                 [ 'population',             'B'    ],
                 [ 'assignment',             'B'    ],
                 [ '',                       '168x' ], # contains the info for parse_colony_pop()
-                [ 'pop_raised',             '10H'  ], # 8 races, andriods, natives
-                [ 'pop_grow',               '10H'  ], # 8 races, andriods, natives
-                [ 'num_turns_existed',      'B'    ], # bookeeping
+                [ 'pop_raised',             '10H'  ], # 8 races, androids, natives
+                [ 'pop_grow',               '10H'  ], # 8 races, androids, natives
+                [ 'num_turns_existed',      'B'    ], # bookkeeping
                 [ 'food2_per_farmer',       'B'    ], # Food per farmer in half-units of food
                 [ 'industry_per_worker',    'B'    ],
                 [ 'research_per_scientist', 'B'    ],
@@ -434,14 +434,14 @@ class Moo2_Savegame(object):
             o_colony['build_queue']  = []
             o_colony['building_ids'] = []
 
-            for i_queue_id in range(0, 7):
-                i_production_id    = struct.unpack_from('B', self.file_data, 0x115 + i_queue_id*2)
-                i_production_flags = struct.unpack_from('B', self.file_data, 0x115 + i_queue_id*2 + 1)
+            for i_queue_id in range(0, K_MAX_BUILD_QUEUE-1):
+                i_production_id    = struct.unpack_from('B', self.file_data, 0x115 + i_queue_id*2)[0]
+                i_production_flags = struct.unpack_from('B', self.file_data, 0x115 + i_queue_id*2 + 1)[0]
                 if i_production_id < 0xFF:
                     o_colony['build_queue'].append({'production_id': i_production_id, 'flags': i_production_flags})
 
             for i_building_id in range(1, 49):
-                i_building_state = struct.unpack_from('B', self.file_data, 0x136 + i_building_id)
+                i_building_state = struct.unpack_from('B', self.file_data, 0x136 + i_building_id)[0]
                 if i_building_state != 0:
                     o_colony['building_ids'].append(i_building_id)
 

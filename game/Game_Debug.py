@@ -1,7 +1,3 @@
-def bin(i):
-    if i > 1:
-        return bin(i >> 1) + str(i & 1)
-    return str(i & 1)
 # ------------------------------------------------------------------------------
 def debug_stars(GAME):
     STARS = GAME['DATA']['stars']
@@ -78,6 +74,11 @@ def debug_heroes(GAME):
             for k in hero.keys():
                 print "        %s: %s" % (k, hero[k])
             print
+# ------------------------------------------------------------------------------
+def bin(i):
+    if i > 1:
+        return bin(i >> 1) + str(i & 1)
+    return str(i & 1)
 # ------------------------------------------------------------------------------
 def debug_ships(GAME):
     SHIPS = GAME['DATA']

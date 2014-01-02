@@ -85,14 +85,13 @@ class Gui_ColonyScreen(Gui_Screen.Gui_Screen):
 
         self.blit(title_surface, (320 - (tw / 2), 1))
 
-    #    total_population = (1000 * colony['population']) + colony['pop_raised']
-    #    print
-    #    print "    Colony:     %s" % colony.name
-    #    print "    Population: %i (+%i)" % (total_population, colony['pop_grow'])
-    #    print "    Industry:   %i" % colony.industry()
-    #    print "    Research:   %i" % colony.research()
-    #    print "    Food (result):%i (%i)" % (colony.food(), colony.food() - colony.population)
-    #    print "    Colonists:"
+        total_population = (1000 * colony.i_population) + sum(colony.v_pop_raised)
+        print
+        print "    Colony:        %s" % colony.s_name
+        print "    Population:    %i (+%i)" % (total_population, sum(colony.v_pop_grow))
+        print "    Food (result): %i (%i)" % (colony.i_food, colony.i_food - total_population)
+        print "    Industry:      %i" % colony.i_industry
+        print "    Research:      %i" % colony.i_research
 
         player_government_id = PLAYERS[colony.i_owner_id].get_racepick_item('goverment')
 
@@ -124,8 +123,7 @@ class Gui_ColonyScreen(Gui_Screen.Gui_Screen):
 
             for i in range(c):
                 colonist = colony.d_colonists[t][i]
-                race     = colonist['race']
-                picture  = PLAYERS[race].i_picture
+                picture  = PLAYERS[colonist.race].i_picture
                 x = 310 + xx * i
                 self.blit(self.get_image('race_icon', picture, icon), (x, y))
                 if i == (c - 1):
