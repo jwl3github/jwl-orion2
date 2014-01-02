@@ -25,9 +25,11 @@ class Network_GameSocket(object):
         self.socket.listen(backlog)
 
     def accept(self):
+        self.socket.settimeout(0.5)
         client_socket, (client_host, client_port) = self.socket.accept()
+        self.socket.settimeout(0)
         client_socket.setblocking(1)
-        #client_socket.settimeout(1)
+        client_socket.settimeout(None)
         return Network_GameSocket(client_socket), (client_host, client_port)
 
     def connect(self, address):
@@ -42,12 +44,12 @@ class Network_GameSocket(object):
         while data_size > 0:
             try:
                 chunk = self.socket.recv(min(buffer_size, data_size))
+                if not chunk:
+                    break
             except socket.timeout:
                 print 'recv_raw -- timeout'
                 self.socket.settimeout(None)  #JWL: temp
                 chunk = ''
-            if not chunk:
-                break
             data += chunk
             data_size -= len(chunk)
         return data

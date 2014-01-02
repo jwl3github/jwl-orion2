@@ -2,8 +2,9 @@ import math
 import time
 
 import Data_BUILDINGS
-import Game_Rules
+import Game_Colonist
 import Game_Object
+import Game_Rules
 
 from Data_CONST import *
 
@@ -15,10 +16,11 @@ class Game_Colony(Game_Object.Game_Object):
         self.o_planet                   = None
         self.i_industry_progress        = 0
         self.i_bc                       = 0
-        self.d_colonists                = {K_FARMER: {}, K_WORKER: {}, K_SCIENTIST: {}}
+        self.d_colonists                = {K_FARMER: [], K_WORKER: [], K_SCIENTIST: []}
         self.v_build_queue              = []
         self.v_build_queue_ids          = []
-        self.available_production       = []
+        self.v_available_production     = []
+        self.v_max_populations          = []
         # Loaded:
         self.i_colony_id                = i_colony_id
         self.i_owner_id                 = 0
@@ -48,7 +50,7 @@ class Game_Colony(Game_Object.Game_Object):
         self.i_num_armors               = 0
         self.v_building_ids             = []
 # ------------------------------------------------------------------------------
-    def construct(self, d_init_struct):
+    def construct(self, d_init_struct, PLAYERS):
         self.i_colony_id                = d_init_struct['colony_id']
         self.i_owner_id                 = d_init_struct['owner_id']
         self.i_allocated_to             = d_init_struct['allocated_to']
@@ -76,6 +78,14 @@ class Game_Colony(Game_Object.Game_Object):
         self.i_num_marines              = d_init_struct['num_marines']
         self.i_num_armors               = d_init_struct['num_armors']
         self.v_building_ids             = d_init_struct['building_ids']
+        for i_type, v_colonists in d_init_struct['colonists'].items():
+            for d_colonist in v_colonists:
+                o_colonist        = Game_Colonist.Game_Colonist(d_colonist['r1'], d_colonist['race'], PLAYERS)
+                o_colonist.a      = d_colonist['a']
+                o_colonist.b      = d_colonist['b']
+                o_colonist.c      = d_colonist['c']
+                o_colonist.d      = d_colonist['d']
+                self.d_colonists[i_type].append(o_colonist)
 # ------------------------------------------------------------------------------
     def print_info(self):
         print "  owner_id: %i" % self.i_owner_id
@@ -91,10 +101,10 @@ class Game_Colony(Game_Object.Game_Object):
         """returns a dict of production id lists"""
 
         rules_buildings = rules['buildings']
-        known_techs     = players[self.i_owner_id].known_techs
+        known_techs     = players[self.i_owner_id].v_known_techs
         replaced        = []
 
-        for production_id in self.list_buildings():
+        for production_id in self.v_building_ids:
             if rules_buildings[production_id].has_key('replaces'):
                 for replaces_id in rules_buildings[production_id]['replaces']:
                     replaced.append(replaces_id)
@@ -118,13 +128,13 @@ class Game_Colony(Game_Object.Game_Object):
 # TODO: check for gravity and colonists, if the gravity generator is not needed here remove it from the list
 # TODO: check for colonists if the alien management center is needed, otherwise remove it from the list
 
-        self.available_production = available
+        self.v_available_production = available
 # ------------------------------------------------------------------------------
     def get_available_production(self):
-        return self.available_production
+        return self.v_available_production
 # ------------------------------------------------------------------------------
     def display_summary(self, title, foot, summary):
-        r_summary=[]
+        v_summary = []
         total = rules.count_summary_result(summary)
         print("+----------------------------------------------------+")
         print("+ %s +" % title.ljust(50))
@@ -132,13 +142,13 @@ class Game_Colony(Game_Object.Game_Object):
         for k in summary:
             if summary[k]:
                 print("+ %s ... %s +" % (str(summary[k]).rjust(6), k.ljust(39)))
-                r_summary.append("%s   %s" % (str(summary[k]).rjust(6), k.ljust(39)))
+                v_summary.append("%s   %s" % (str(summary[k]).rjust(6), k.ljust(39)))
         print("+                                                    +")
         print("+ % 6i ... %s +" % (total, foot.ljust(39)))
         print("+----------------------------------------------------+")
-        r_summary.append(' ')
-        r_summary.append("% 6i ... %s" % (total, foot.ljust(39)))
-        return r_summary
+        v_summary.append(' ')
+        v_summary.append("% 6i ... %s" % (total, foot.ljust(39)))
+        return v_summary
 # ------------------------------------------------------------------------------
     def print_morale_summary(self):
         return self.display_summary("Morale Summary", "Total", self.morale_summary)
@@ -155,39 +165,6 @@ class Game_Colony(Game_Object.Game_Object):
     def print_research_summary(self):
         return self.display_summary("Research Summary", "Research Industry Produced", self.research_summary)
 # ------------------------------------------------------------------------------
-    def xget_colony_pollution(self, production, PLAYERS):
-        """
-        counts pollution for given production
-        """
-        if self.is_outpost():
-            return 0
-
-        if self.has_building(B_CORE_WASTE_DUMP):
-            return 0
-
-        planet     = self.planet
-        production = float(production)
-        tolerant   = 0
-        pop        = 0
-
-        for t in (K_FARMER, K_SCIENTIST, K_WORKER):
-            for colonist in self.d_colonists[t]:
-                pop += 1
-                if PLAYERS[colonist['race']]['racepicks']['tolerant']:
-                    tolerant += 1
-
-        if self.has_building(B_ATMOSPHERE_RENEWER):
-            production = math.ceil(production / 4)
-
-        tolerance = [2, 4, 6, 8, 10][planet['size']]
-
-        if TECH_NANO_DISASSEMBLERS in PLAYERS[self.i_owner_id]['known_techs']:
-            tolerance += tolerance
-
-        pollution = float(max(0, production - tolerance)) / 2
-        pollution = float(pop - tolerant) * pollution / float(pop)
-        return round(pollution)
-# ------------------------------------------------------------------------------
     def exists(self):
         return self.i_owner_id < 0xff
 # ------------------------------------------------------------------------------
@@ -202,7 +179,7 @@ class Game_Colony(Game_Object.Game_Object):
 # ------------------------------------------------------------------------------
     def update_industry_progress(self):
         # Amount of industry accumulated for the current build item.
-        self.i_industry_progress += self.industry
+        self.i_industry_progress += self.i_industry
         return self.i_industry_progress
 # ------------------------------------------------------------------------------
     def reset_industry_progress(self):
@@ -240,50 +217,10 @@ class Game_Colony(Game_Object.Game_Object):
         pops    = [0, 0, 0, 0, 0, 0, 0, 0]
         for t in [K_FARMER, K_WORKER, K_SCIENTIST]:
             for colonist in self.d_colonists[t]:
-                pops[colonist['race']] += 1
+                pops[colonist.i_race] += 1
         return pops
 # ------------------------------------------------------------------------------
-    def get_population_growth(self, max_populations, PLAYERS):
-        """
-        http://masteroforion2.blogspot.com/2005/09/growth-formula.html
-        """
-        growth = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        if self.is_outpost():
-            return growth
-
-        pops = self.get_aggregated_populations()
-
-        total_population = sum(pops)
-
-        if 192 in PLAYERS[self.i_owner_id].known_techs:
-            universal_antidote_bonus = 50
-        else:
-            universal_antidote_bonus = 0
-
-        for race in range(8):
-            race_population = pops[race]
-            if race_population:
-                max_population = max_populations[race]
-                b = math.floor((2000 * race_population * max(0, max_population - total_population) / max_population) ** 0.5)
-
-                g, t, r, l, h = 0, 0, 0, 0, 0
-
-                race_bonus         = PLAYERS[race].get_racepick_item('population') # most races have 0, Sakkra have 100 here
-                microbiotics_bonus = 0 # 25 when invented
-                random_bonus       = 0 # 100 when Boom of 100%
-                leader_bonus       = 0 # e.g. 30 on Medicine 30%
-
-                a = 100 + race_bonus + (microbiotics_bonus + universal_antidote_bonus) + random_bonus + leader_bonus
-
-    # TODO: apply Cloning center
-                c = 0
-
-                growth[race] = int(((a * b) / 100) + math.floor(c))
-
-
-        return growth
-# ------------------------------------------------------------------------------
-    def raise_population(self):
+    def raise_population(self, PLAYERS):
         """
         raise the population
         """
@@ -291,18 +228,15 @@ class Game_Colony(Game_Object.Game_Object):
             print "owner is 0xff"
             return
 
-        max_populations = self.max_populations
-# print "raise_population ... max_populations: %s" % str(max_populations)
-# print "raise_population ... pop_raised: %s" % str(self.pop_raised)
-# print "raise_population ... pop_grow: %s" % str(self.v_pop_grow)
-        for race in range(8):
-            self.v_pop_raised[race] += self.v_pop_grow[race]
-            if self.v_pop_raised[race] > 999:
-                # the race that turns over 999 in pop_raised gets a new farmer
-                r1 = self.i_owner_id
-                self.d_colonists[K_FARMER].append({'a': r1 & race, 'b': K_FARMER, 'c': 0x00, 'd': 0x00, 'r1': r1, 'race': race})
-                self.v_pop_raised[race] -= 1000
-                self.population += 1
+        v_max_populations = self.v_max_populations
+        for i_race in range(K_MAX_PLAYERS):
+            self.v_pop_raised[i_race] += self.v_pop_grow[i_race]
+            if self.v_pop_raised[i_race] > 999:
+                # the race that turns over 999 in v_pop_raised gets a new farmer
+                colonist = Game_Colonist(self.i_owner_id, i_race, PLAYERS)
+                self.d_colonists[K_FARMER].append(colonist)
+                self.v_pop_raised[i_race] -= 1000
+                self.i_population += 1
 # ------------------------------------------------------------------------------
     def total_population(self):
         return len(self.d_colonists[K_FARMER]) + len(self.d_colonists[K_WORKER]) + len(self.d_colonists[K_SCIENTIST])
@@ -315,16 +249,16 @@ class Game_Colony(Game_Object.Game_Object):
 # ------------------------------------------------------------------------------
     def recount_outpost(self):
 #       print "this is outpost"
-        self.population       = 0
-        self.pollution        = 0
-        self.industry         = 0
-        self.research         = 0
+        self.i_population     = 0
+        self.i_pollution      = 0
+        self.i_industry       = 0
+        self.i_research       = 0
 #       self.food_summary     = {}
 #       self.industry_summary = {}
 #       self.research_summary = {}
 
 # ------------------------------------------------------------------------------
-    def recount(self, rules, colony_leader, players):
+    def recount(self, RULES, colony_leader, PLAYERS):
         """
         recounts colony values, should be called after any change
         """
@@ -334,31 +268,27 @@ class Game_Colony(Game_Object.Game_Object):
         self.i_bc = 0
 
         if not self.exists():
-            self.population      = 0
-            self.max_populations = Game_Rules.get_empty_max_populations()
+            self.i_population      = 0
+            self.v_max_populations = Game_Rules.get_empty_max_populations()
             return
 
         if self.is_outpost():
             self.recount_outpost()
-            self.max_populations = Game_Rules.get_empty_max_populations()
+            self.v_max_populations = Game_Rules.get_empty_max_populations()
             return
 
-        self.morale_summary    = Game_Rules.compose_morale_summary(rules, self, colony_leader, players)
-        self.morale            = Game_Rules.count_summary_result(self.morale_summary)
-        self.food_summary      = Game_Rules.compose_food_summary(rules, self, players)
-        self.i_food            = Game_Rules.count_summary_result(self.food_summary)
-        self.industry_summary  = Game_Rules.compose_industry_summary(rules, self, colony_leader, players)
-        self.i_industry        = Game_Rules.count_summary_result(self.industry_summary)
-        self.pollution         = self.industry_summary['pollution']
-        self.bc_summary        = Game_Rules.compose_bc_summary(rules, self, players)
-        self.i_bc              = Game_Rules.count_summary_result(self.bc_summary)
-        self.research_summary  = Game_Rules.compose_research_summary(rules, self, players)
-        self.i_research        = Game_Rules.count_summary_result(self.research_summary)
-        self.i_max_populations = Game_Rules.compose_max_populations(self, players)
-        self.i_max_population  = max(self.max_populations)
-        self.v_pop_grow        = self.get_population_growth(self.max_populations, players)
+        self.d_prod_summary      = Game_Rules.compose_prod_summary(RULES, self, colony_leader, PLAYERS)
+        self.i_morale            = self.d_prod_summary['morale_total']
+        self.i_food              = self.d_prod_summary['food_total']
+        self.i_industry          = self.d_prod_summary['industry_total']
+        self.i_pollution         = self.d_prod_summary['industry_pollution']
+        self.i_research          = self.d_prod_summary['research_total']
+        #self.i_bc                = self.d_prod_summary['bc_total']
+        self.v_max_populations   = Game_Rules.compose_max_populations(RULES, self, PLAYERS)
+        self.v_pop_grow          = Game_Rules.compose_pop_growth(RULES, self, colony_leader, PLAYERS)
+        self.i_max_population    = max(self.v_max_populations)
 
-        self.init_available_production(rules, players)
+        self.init_available_production(RULES, PLAYERS)
 
         end_clock = time.clock()
         print "$$$ colony::recount() ... clock elapsed = %f" % (end_clock-start_clock)

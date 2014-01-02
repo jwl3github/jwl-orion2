@@ -61,22 +61,78 @@ K_WORKER                  = 0x82
 K_HERO_OFFICER            = 0    # Fleet-only hero
 K_HERO_GOVERNOR           = 1    # Colony-only hero
 
+# ------------------------------------------------------------------------------
 K_GOVERMENT_FEUDAL        = 0
 K_GOVERMENT_FEUDAL2       = 1
 K_GOVERMENT_DICTATORSHIP  = 2
 K_GOVERMENT_IMPERIUM      = 3
 K_GOVERMENT_DEMOCRACY     = 4
 K_GOVERMENT_UNIFICATION   = 6
+K_GOVERMENT_UNIFICATION2  = 7
+# ------------------------------------------------------------------------------
+K_GOVERNMENTS = {
+        0:    { 'name':              'Feudal',
+                'morale':            -20,
+                'ship_build_bonus':  +33.3,
+                'science_bonus':     -50.0,
+                'assimilate_turns':  8 },
 
-K_GOVERNMENTS = { 0:    { 'name': "Feudal",               'morale': 0, },
-                  1:    { 'name': "Feudal 2",             'morale': 0, },
-                  2:    { 'name': "Dictatorship",         'morale': -20, },
-                  3:    { 'name': "Imperium",             'morale': 0, },
-                  4:    { 'name': "Democracy",            'morale': 0, },
-                  5:    { 'name': "Democracy 2",          'morale': 0, },
-                  6:    { 'name': "Unification",          'morale': 0, },
-                  7:    { 'name': "Galactic Unification", 'morale': 0, },
+        1:    { 'name':              'Feudal 2',
+                'morale':            -20,
+                'ship_build_bonus':  +33.3,
+                'science_bonus':     -50.0,
+                'assimilate_turns':  8 },
+
+        2:    { 'name':              'Dictatorship',
+                'morale':            -20.0,
+                'spy_bonus':         +10.0,
+                'assimilate_turns':  8 },
+
+        3:    { 'name':              'Imperium',
+                'morale':            -20.0,
+                'spy_bonus':         +10.0,
+                'assimilate_turns':  8 },
+
+        4:    { 'name':              'Democracy',
+                'spy_bonus':         -10.0,
+                'research_bonus':    +50.0,
+                'bc_bonus':          +50.0,
+                'assimilate_turns':  4 },
+
+        5:    { 'name':              'Democracy 2',
+                'spy_bonus':         -10.0,
+                'research_bonus':    +50.0,
+                'bc_bonus':          +50.0,
+                'assimilate_turns':  4 },
+
+        6:    { 'name':              'Unification',
+                'spy_bonus':         +15.0,
+                'food_bonus':        +50.0,
+                'industry_bonus':    +50.0,
+                'assimilate_turns':  20 },
+
+        7:    { 'name':              'Galactic Unification',
+                'spy_bonus':         +15.0,
+                'food_bonus':        +50.0,
+                'industry_bonus':    +50.0,
+                'assimilate_turns':  20 },
 }
+# ------------------------------------------------------------------------------
+def apply_government_key_default(gov_id, key, value):
+    if not K_GOVERNMENTS[gov_id].has_key(key):
+        K_GOVERNMENTS[gov_id][key] = value
+# ------------------------------------------------------------------------------
+def regularize_government_keys():
+    ''' Makes sure that the base key set is present to avoid a lot of extraneous has_key() calls. '''
+    for gov_id in K_GOVERNMENTS.keys():
+        apply_government_key_default(gov_id, 'morale',           0)
+        apply_government_key_default(gov_id, 'food_bonus',       0)
+        apply_government_key_default(gov_id, 'industry_bonus',   0)
+        apply_government_key_default(gov_id, 'research_bonus',   0)
+        apply_government_key_default(gov_id, 'spy_bonus',        0)
+        apply_government_key_default(gov_id, 'bc_bonus',         0)
+        apply_government_key_default(gov_id, 'ship_build_bonus', 0)
+# ------------------------------------------------------------------------------
 
 K_PLANET_LOW_G            = 0
 K_PLANET_NORMAL_G         = 1
@@ -86,9 +142,48 @@ K_PLANET_ASTEROID         = 1
 K_PLANET_GAS_GIANT        = 2
 K_PLANET_HABITABLE        = 3
 
+K_PLANET_TOL_BY_SIZE      = [2,  4,  6,  8, 10]   # Base amount of ignored pollution; Indexed by size
+
+'''
+http://masteroforion2.blogspot.com/2005/10/maximum-population.html
+'''
+K_PLANET_POP              = {
+    #                To, Ra, Ba, De, Tu, Oc, Sw, Ar, Te, Ga
+    '':           [ [ 1,  1,  1,  1,  1,  1,  2,  3,  4,  5],
+                    [ 3,  3,  3,  3,  3,  3,  4,  6,  8, 10],
+                    [ 4,  4,  4,  4,  4,  4,  6,  9, 12, 15],
+                    [ 5,  5,  5,  5,  5,  5,  8, 12, 16, 20],
+                    [ 6,  6,  6,  6,  6,  6, 10, 15, 20, 25], ],
+    'aqua':       [ [ 1,  1,  1,  1,  2,  5,  2,  3,  5,  5],
+                    [ 3,  3,  3,  3,  4, 10,  4,  6, 10, 10],
+                    [ 4,  4,  4,  4,  6, 15,  6,  9, 15, 15],
+                    [ 5,  5,  5,  5,  8, 20,  8, 12, 20, 20],
+                    [ 6,  6,  6,  6, 10, 25, 10, 15, 25, 25], ],
+    '-tol':       [ [ 3,  3,  3,  3,  3,  3,  3,  4,  5,  5],
+                    [ 5,  5,  5,  5,  5,  5,  7,  9, 10, 10],
+                    [ 8,  8,  8,  8,  8,  8, 10, 13, 15, 15],
+                    [10, 10, 10, 10, 10, 10, 13, 17, 20, 20],
+                    [13, 13, 13, 13, 13, 13, 16, 21, 25, 25], ],
+    'sub':        [ [ 3,  3,  3,  3,  3,  3,  4,  5,  6,  7],
+                    [ 7,  7,  7,  7,  7,  7,  8, 10, 12, 14],
+                    [10, 10, 10, 10, 10, 10, 12, 15, 18, 21],
+                    [13, 13, 13, 13, 13, 13, 16, 20, 24, 28],
+                    [16, 16, 16, 16, 16, 16, 20, 25, 30, 35], ],
+    'aqua-tol':   [ [ 3,  3,  3,  3,  3,  5,  3,  4,  5,  5],
+                    [ 5,  5,  5,  5,  5, 10,  7,  9, 10, 10],
+                    [ 8,  8,  8,  8,  8, 15, 10, 13, 15, 15],
+                    [10, 10, 10, 10, 10, 20, 13, 17, 20, 20],
+                    [13, 13, 13, 13, 13, 25, 16, 21, 25, 25], ],
+    'sub-tol':    [ [ 5,  5,  5,  5,  5,  5,  5,  6,  7,  7],
+                    [ 9,  9,  9,  9,  9,  9, 11, 13, 14, 14],
+                    [14, 14, 14, 14, 14, 14, 16, 19, 21, 21],
+                    [18, 18, 18, 18, 18, 18, 21, 25, 28, 28],
+                    [23, 23, 23, 23, 23, 23, 26, 31, 35, 35], ],
+    }
+
 K_TERRAIN_TOXIC           = 0
 K_TERRAIN_RADIATED        = 1
-K_TERRAIN_BARED           = 2
+K_TERRAIN_BARREN          = 2
 K_TERRAIN_DESERT          = 3
 K_TERRAIN_TUNDRA          = 4
 K_TERRAIN_OCEAN           = 5
@@ -103,6 +198,7 @@ K_MINERAL_ABUNDANT        = 2
 K_MINERAL_RICH            = 3
 K_MINERAL_ULTRARICH       = 4
 K_SPECIAL_ARTIFACTS       = 10
+K_SPECIAL_GOLD            = 4
 
 K_BUILD_TRADE_GOODS       = 0xFE
 

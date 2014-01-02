@@ -111,6 +111,9 @@ class Gui_Screen(object):
     def list_prototypes(self):
         return Network_Client.Client.list_prototypes()
 
+    def set_research(self, i_tech_id):
+        return Network_Client.Client.set_research(i_tech_id)
+
     def draw_line(self, color, p1, p2, line_width):
         pygame.draw.line(GUI.DISPLAY, color, p1, p2, line_width)
 

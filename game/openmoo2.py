@@ -7,7 +7,9 @@ import Game_Args
 import Network_Client
 import Gui
 from Gui import GUI
+import Data_BUILDINGS
 import Data_CONST
+import Data_TECH
 #import autoplayer
 
 # ------------------------------------------------------------------------------
@@ -59,6 +61,10 @@ def main(argv):
 
     pygame.mouse.set_visible(False)
     pygame.display.set_caption("OpenMOO2: PLAYER_ID = %s" % PLAYER_ID)
+
+    Data_BUILDINGS.regularize_building_keys()
+    Data_CONST.regularize_government_keys()
+    Data_TECH.regularize_tech_keys()
 
     Network_Client.Client.connect(HOST, PORT, SOCKET_BUFFER_SIZE)
     Network_Client.Client.login(PLAYER_ID)

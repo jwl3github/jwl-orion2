@@ -5,6 +5,9 @@ import Game_Main
 import Game_Rules
 import Network_Server
 import openmoo2
+import Data_BUILDINGS
+import Data_CONST
+import Data_TECH
 
 # ------------------------------------------------------------------------------
 def show_usage(name, message):
@@ -40,6 +43,11 @@ def main(argv):
         sys.exit(1)
 
     print("* Loading savegame from '%s/%s'" % (moo2_dir, GAME_FILE))
+
+    Data_BUILDINGS.regularize_building_keys()
+    Data_CONST.regularize_government_keys()
+    Data_TECH.regularize_tech_keys()
+
     GAME.load_moo2_savegame(moo2_dir + "/" + GAME_FILE)
     GAME.show_stars()
     GAME.show_planets()

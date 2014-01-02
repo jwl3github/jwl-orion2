@@ -75,7 +75,7 @@ class Game_Main(object):
         # Transfer generic loaded data into game memory object.
         for i_id, d_struct in self.d_load_colonies.items():
             self.d_colonies[i_id] = Game_Colony.Game_Colony(i_id)
-            self.d_colonies[i_id].construct(d_struct)
+            self.d_colonies[i_id].construct(d_struct, self.d_players)
 
         # Perform extra cross-indexing / info caching.
         for i_id, d_colony in self.d_colonies.items():
@@ -139,9 +139,9 @@ class Game_Main(object):
         self.init_galaxy()
         self.init_planets()
         self.init_stars()
-        self.init_colonies()
         self.init_heroes()
         self.init_players()
+        self.init_colonies()
         self.init_ships()
         self.recount()  # Establish some basic derived values.
 # ------------------------------------------------------------------------------
@@ -196,11 +196,11 @@ class Game_Main(object):
     def list_player_governors(self, i_player_id):
         return self.list_player_heroes(i_player_id, K_HERO_GOVERNOR)
 # ------------------------------------------------------------------------------
-    def update_research(self, i_player_id, i_research_item):
-        print("Game::update_research() ... player_id = %i, research_item = %i" % (i_player_id, i_research_item))
+    def update_research(self, i_player_id, i_tech_id):
+        print("Game::update_research() ... player_id = %i, tech_id = %i" % (i_player_id, i_tech_id))
         o_player = self.d_players[i_player_id]
-        o_player.research_item        = i_research_item
-        o_player.research_area        = self.d_rules['tech_table'][i_research_item]['area']
+        o_player.research_tech_id     = i_tech_id
+        o_player.research_area        = self.d_rules['tech_table'][i_tech_id]['area']
         o_player.research_cost        = Game_Rules.research_costs(self.d_rules['research_areas'], o_player.i_research_area, o_player.i_research)
         o_player.research_turns_left  = Game_Rules.research_turns(o_player.i_research_cost, o_player.i_research_progress, o_player.i_research)
         return True
@@ -247,7 +247,7 @@ class Game_Main(object):
         for i_player_id in range(K_MAX_PLAYERS):
             o_player = self.d_players[i_player_id]
             if o_player.alive():
-                self.update_research(i_player_id, o_player.i_research_item)
+                self.update_research(i_player_id, o_player.i_research_tech_id)
 
             # Determine the player's upcoming research area by checking
             # for a known tech in the progressive area of each tech
@@ -285,8 +285,8 @@ class Game_Main(object):
             # / refresh player's research_areas
 # ------------------------------------------------------------------------------
     def recount(self):
-        #self.recount_heroes()    # JWL: temp disable
-        #self.recount_colonies()    # JWL: temp disable
+        self.recount_heroes()
+        self.recount_colonies()
         self.recount_players()
 # ------------------------------------------------------------------------------
     def raise_population(self):
@@ -434,15 +434,15 @@ class Game_Main(object):
             if player.research_completed():
                 print "research completed"
                 print player.known_techs
-                print player.research_item
-                player.add_known_technology(player.research_item)
+                print player.research_tech_id
+                player.add_known_technology(player.research_tech_id)
                 research_area_id = player.research_area
                 if research_area_id:
                     research_area = self.d_rules['research_areas'][research_area_id]
                     if research_area['next']:
                         player.research_area = research_area['next']
                 player.research_progress = 0
-                player.research_item = 0
+                player.research_tech_id = 0
             else:
                 print "research not completed yet"
 #### JWL: Need to query user for new research via research_screen popup.
@@ -513,7 +513,7 @@ class Game_Main(object):
         print("| player_id | name                 | emperor              | food   | BC     | income | research:area        | :item                | :costs  | :progress |")
         print("+-----------+----------------------+----------------------+--------+--------+--------+----------------------+----------------------+---------+-----------+")
         for i, p in self.d_players.items():
-            print("| %9i | %20s | %20s | %6i | %6i | %6i | %20s | %20s | %7i | %9i |" % (i, p.s_race_name, p.s_emperor_name, p.i_food, p.i_bc, p.i_bc_income, str(p.i_research_area), str(p.i_research_item), p.i_research_cost, p.i_research_progress))
+            print("| %9i | %20s | %20s | %6i | %6i | %6i | %20s | %20s | %7i | %9i |" % (i, p.s_race_name, p.s_emperor_name, p.i_food, p.i_bc, p.i_bc_income, str(p.i_research_area), str(p.i_research_tech_id), p.i_research_cost, p.i_research_progress))
         print("+-----------+----------------------+----------------------+--------+--------+--------+----------------------+----------------------+---------+-----------+")
         print
 # ------------------------------------------------------------------------------

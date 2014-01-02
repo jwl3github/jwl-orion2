@@ -1,26 +1,20 @@
 import math
-
+import logging
 import Data_BUILDINGS
 import Data_CONST
 import Data_TECH
+from Data_CONST import *
 
-PLANETS_MINERALS = {
-    0: { 'worker_base':    1 },
-    1: { 'worker_base':    2 },
-    2: { 'worker_base':    3 },
-    3: { 'worker_base':    5 },
-    4: { 'worker_base':    8 },
-}
+WORKER_BASE_BY_PLANET_MINERALS = { 0:1, 1:2, 2:3, 3:5 , 4:8, }
 
 PLANETS_SPECIALS = {
-    Data_CONST.K_SPECIAL_ARTIFACTS: {
-        'research_bonus':        +2,
-    }
+    Data_CONST.K_SPECIAL_ARTIFACTS: {'research_bonus': +2},
+    Data_CONST.K_SPECIAL_GOLD:      {'bc_bonus':       +50.0},
 }
 
 DEFAULT_RULES = {
     'hero_levels':         (0, 60, 150, 300, 1000, 2000),
-    'planets_minerals':    PLANETS_MINERALS,
+    'worker_base':         WORKER_BASE_BY_PLANET_MINERALS,
     'planets_specials':    PLANETS_SPECIALS,
     'research':            Data_TECH.RESEARCH,
     'research_areas':      Data_TECH.RESEARCH_AREAS,
@@ -29,393 +23,300 @@ DEFAULT_RULES = {
     'governments':         Data_CONST.K_GOVERNMENTS,
 }
 
-"""
-    'planet_worker_base':                           [1, 2, 3, 5, 8],
-    'microlite_construction_per_worker':            1,
-    'microlite_construction_industry_bonus':        1,
-
-#    'automated_factory':                            5,
-#    'automated_factory_per_worker':                 1,
-#    'automated_factory_industry_bonus':             1,
-
-#    'robo_miner_plant':                             10,
-#    'robo_miner_plant_per_worker':                  2,
-#    'robo_miner_plant_industry_bonus':              2,
-
-#    'deep_core_mine':                               15,
-#    'deep_core_mine_per_worker':                    3,
-#    'deep_core_mine_industry_bonus':                3,
-
-    'robotic_factory_mineral_bonuses':              [5, 8, 10, 15, 20],
-
-    'weather_controller_farmer_bonus':              2,
-
-    'astro_university_farmer_bonus':                1,
-    'astro_university_worker_bonus':                1,
-    'astro_university_scientist_bonus':             1,
-
-    'research_lab':                                 5,
-    'research_lab_scientist_bonus':                 1,
-    'supercomputer':                                10,
-    'supercomputer_scientist_bonus':                2,
-
-    'autolab':                                      30,
-
-
-    'heightened_intelligence_research_bonus':       1,
-    'artifacts_reseach_bonus':                      2,
-"""
-
-"""
-    returns the Food production summary table
-"""
-def compose_food_summary(RULES, colony, PLAYERS):
-    planet = colony.planet()
-
-#    if planet is None:
-#        print("ERROR: colony has no planet!")
-#        print("colony.owner() = %i" % colony.get_owner())
-
-#    print("rules::compose_food_summary() colony.get_id() = %i" % colony.get_id())
-#    print("rules::compose_food_summary() planet.get_id() = %i" % planet.get_id())
-
-    summary = {
-        'farmers':            0,
-#        'astro_university':        0,
-        'aquatic_bonus':        0,
-#        'weather_controller':    0,
-#        'morale_bonus':        0,
-#        'hydroponic_farm':        0,
-#        'blockaded':        0,
-#        'government_bonus':        0
-    }
-
-    RULES_BUILDINGS    = RULES['buildings']
-
-    farmers_num = len(colony.colonists[FARMER])
-
-    goverment = PLAYERS[colony.get_owner()].get_racepick_item('goverment')
-
-    for colonist in colony.colonists[FARMER]:
-        summary['farmers'] += planet.get_foodbase()
-        if PLAYERS[colonist['race']].get_racepick_item('aquatic'):
-#        print "    aquatic farmer!"
-            if planet.get_terrain() in [TERRAIN_OCEAN, TERRAIN_TERRAN]:
-                summary['aquatic_bonus'] += 1
-
-    # apply buildings farmer_bonus
-    for b_id in colony.list_buildings():
-        if BUILDINGS[b_id].has_key("farmer_bonus"):
-#        b_sum_key = "building_%i" % b_id
-            b_sum_key = "%s_bonus" % BUILDINGS[b_id]['name']
-            summary[b_sum_key] = farmers_num * RULES_BUILDINGS[b_id]['farmer_bonus']
-
-    # count in morale
-    summary['morale_bonus'] = float(sum(summary.values())) * colony.morale() / 100
-
-    # apply buildings food_production
-    for b_id in colony.list_buildings():
-        if RULES_BUILDINGS[b_id].has_key("food_production"):
-#        b_sum_key = "building_%i" % b_id
-            b_sum_key = "%s" % BUILDINGS[b_id]['name']
-            summary[b_sum_key] = RULES_BUILDINGS[b_id]['food_production']
-
-    # TODO: apply blockade
-    # TODO: apply food replicators
-
-    if goverment == GOVERMENT_UNIFICATION:
-        summary['government_bonus'] = sum(summary.values()) // 2
-
-    return summary
-# /compose_food_summary
-
-"""
-    returns the hashmap of production items
-"""
-def compose_industry_summary(RULES, colony, colony_leader, PLAYERS):
-    BUILDINGS = RULES['buildings']
-
-    TECH_TABLE = RULES['tech_table']
-
-    ME = PLAYERS[colony.get_owner()]
-
-    planet = colony.planet()
-    summary = {
-        'workers':            0,
-#        'microlite_constructions':    0,
-#        'automated_factory_people':    0,
-#        'deep_core_mine_people':    0,
-#        'robominer_plant_people':    0,
-#        'morale_bonus':                 0,
-        'gravity_penalty':        0,
-#        'blockaded':                    0,
-#        'government_bonus':        0,
-#        'recyclotron':                  0,
-#        'automated_factory_bonus':    0,
-#        'robominer_plant_bonus':    0,
-#        'deep_core_mine_bonus':         0,
-#        'robotic_factory':        0,
-        'pollution':                    0,
-    }
-
-    planet_minerals = planet.get_minerals()
-
-    worker_base = RULES['planets_minerals'][planet_minerals]['worker_base']
-    player_goverment = PLAYERS[colony.get_owner()].get_racepick_item('goverment')
-    industry_per_worker = worker_base
-
-    workers_num = len(colony.colonists[WORKER])
-
-    for colonist in colony.colonists[WORKER]:
-        summary['workers'] += worker_base + PLAYERS[colonist['race']].get_racepick_item('industry')
-
-
-    # TODO: appply technologies worker_bonus
-    for tech_id in ME.known_techs:
-        if TECH_TABLE[tech_id].has_key("worker_bonus"):
-            b_sum_key = "%s ... bonus" % TECH_TABLE[tech_id]['name']
-            summary[b_sum_key] = workers_num * TECH_TABLE[tech_id]['worker_bonus']
-            industry_per_worker += TECH_TABLE[tech_id]['worker_bonus']
-
-    # appply buildings worker_bonus
-    for b_id in colony.list_buildings():
-        if BUILDINGS[b_id].has_key("worker_bonus"):
-            b_sum_key = "%s ... bonus" % BUILDINGS[b_id]['name']
-            summary[b_sum_key] = workers_num * BUILDINGS[b_id]['worker_bonus']
-            industry_per_worker += BUILDINGS[b_id]['worker_bonus']
-
-    tmp_sum = float(sum(summary.values()))
-#    print "rules::compose_industry_summary() ... tmp_sum = %f" % tmp_sum
-
-
-    # TODO: apply morale!
-    morale_bonus = tmp_sum * colony.morale() / 100
-
-    if colony_leader and colony_leader['skills'].has_key('industry_bonus'):
-#        print colony_leader
-        leader_bonus = colony_leader['skills']['industry_bonus'] + (colony_leader['level'] * colony_leader['skills']['industry_bonus'])
-#        print "rules::compose_industry_summary() ... leader_bonus = %f" % leader_bonus
-        leader_bonus = tmp_sum * leader_bonus / 100
-#        print "rules::compose_industry_summary() ... leader_bonus = %f" % leader_bonus
-#                   print "leader_bonus = %i" % leader_bonus
-#        summary['Leader Bonus'] = round((colony_leader['skills']['morale_bonus'] + (colony_leader['level'] * colony_leader['skills']['morale_bonus'])) / 10) * 10
-    else:
-        leader_bonus = 0
-
-
-
-    # TODO: apply government
-    if player_goverment == 6:            # GOVERMENT_UNIFICATION
-        summary['government_bonus'] = tmp_sum * 0.5
-
-    if morale_bonus:
-        summary['Moral Bonus'] = morale_bonus
-    if leader_bonus:
-        summary['Leader Bonus'] = leader_bonus
-
-
-#    print "industry_per_worker: %i" % industry_per_worker
-#    print "planet gravity: %i" % planet['gravity']
-    if not colony.has_building(B_GRAVITY_GENERATOR):
-        for colonist in colony.colonists[WORKER]:
-            if PLAYERS[colonist['race']].get_racepick_item('low_g'):
-                # log-G race
-                if planet.get_gravity() == 1:                # normal-G planet
-                    summary['gravity_penalty'] -= float((industry_per_worker + PLAYERS[colonist['race']].get_racepick_item('industry'))) / 4
-            elif PLAYERS[colonist['race']].get_racepick_item('high_g'):
-                pass
-            else:
-                # normal-G race
-                if planet.get_gravity() == 2:                # high-G planet
-                    summary['gravity_penalty'] -= float((industry_per_worker + PLAYERS[colonist['race']].get_racepick_item('industry'))) / 2
-
-
-    total = round(sum(summary.values()))
-#    print "@@@ colony::get_industry_summary ... total = %s" % str(total)
-
-#    summary['pollution'] -= colony.get_colony_pollution(total, PLAYERS)
-    summary['pollution'] -= count_colony_pollution(colony, total, PLAYERS)
-
-    if colony.has_building(B_RECYCLOTRON):
-        summary['recyclotron'] = len(colony.colonists[FARMER]) + workers_num + len(colony.colonists[SCIENTIST])
-
-    # apply buildings industry
-    for b_id in colony.list_buildings():
-        if BUILDINGS[b_id].has_key("industry"):
-            b_sum_key = "%s ... industry" % BUILDINGS[b_id]['name']
-            summary[b_sum_key] = BUILDINGS[b_id]['industry']
-
-    # apply buildings industry_by_minerals
-    for b_id in colony.list_buildings():
-        if BUILDINGS[b_id].has_key("industry_by_minerals"):
-            b_sum_key = "building_%s_minerals" % BUILDINGS[b_id]['name']
-            summary[b_sum_key] = BUILDINGS[b_id]['industry_by_minerals'][planet_minerals]
-
-
-    # TODO: apply food replicator: original ratio is 2 production units -> 1 food
-
-    return summary
-# /compose_industry_summary
-
-"""
-    returns the hasmap of research items
-"""
-def compose_research_summary(RULES, colony, PLAYERS):
-    planet = colony.planet()
-    summary = {
-        'scientists':        0,
-#        'artifacts':        0,
-#        'intelligence':        0,
-#        'supercomputer_people':    0,
-#        'supercomputer_bonus':    0,
-#        'research_lab_people':    0,
-#        'research_lab_bonus':    0,
-        'gravity_penalty':        0.0,
-#        'astro_university':        0,
-        'race_bonus':        0,
-#        'morale_bonus':        0,
-#        'government_bonus':        0,
-#        'autolab':            0
-    }
+# ------------------------------------------------------------------------------
+def count_colony_pollution(RULES, colony, colony_leader, industry_total, PLAYERS):
 
     if colony.is_outpost():
-        return summary
-    base = 3
+        return 0
 
-    player_goverment = PLAYERS[colony.get_owner()].get_racepick_item('goverment')
+    # Basic pollution ratio due to industry vs. buildings.
+    # May fall to 0 (i.e. for Core Waste Dump)
+    industry = float(industry_total)
 
-    scientist_num = len(colony.colonists[SCIENTIST])
+    for b_id in colony.v_building_ids:
+        industry *= RULES['buildings'][b_id]['industry_pollution_ratio']
+        if industry < 1.0:
+            return 0
 
-    morale = float(colony.morale())
+    base_tolerance = K_PLANET_BASE_TOL[colony.o_planet.i_size]
 
-    for colonist in colony.colonists[SCIENTIST]:
-        race = colonist['race']
-        summary['scientists'] += base
-        summary['race_bonus'] += PLAYERS[race].get_racepick_item('science')
+    for tech_id in PLAYERS[colony.i_owner_id].v_known_techs:
+        base_tolerance *= TECH_TABLE[tech_id]['industry_pollution_base_ratio']
 
-#        if PLAYERS[race]['technologies'][TECH_HEIGHTENED_INTELLIGENCE] == 3:
-        if TECH_HEIGHTENED_INTELLIGENCE in PLAYERS[race].known_techs:
-            summary['intelligence'] += RULES['heightened_intelligence_research_bonus']
+    pollution = (industry - base_tolerance) / 2
+    if pollution < 1.0:
+        return 0
 
-        if RULES['planets_specials'].has_key(planet.get_special()):
-            if RULES['planets_specials'][planet.get_special()].has_key("research_bonus"):
-                summary['special'] = RULES['planets_specials'][planet.get_special()]['research_bonus']
+    # Per-colonist tolerance calcuation.
+    total_pop    = colony.total_population()
+    tolerant_pop = 0
 
-#        if planet['special'] == SPECIAL_ARTIFACTS:
-#            research['artifacts'] += RULES['artifacts_reseach_bonus']
+    for t in (K_FARMER, K_SCIENTIST, K_WORKER):
+        for colonist in colony.colonists[t]:
+            if colonist.android or players[colonist.i_race].get_racepick_item('tolerant'):
+                tolerant_pop += 1
 
-        if not colony.has_building(B_GRAVITY_GENERATOR):
-            if PLAYERS[race].get_racepick_item('low_g'):
-                # low-G colonist
-                if planet.get_gravity() == PLANET_NORMAL_G:    # normal-G planet
-                    summary['gravity_penalty'] -= 1.75
-            elif PLAYERS[race].get_racepick_item('high_g'):
-                # high-G colonist
-                pass
-            else:
-                # normal-G colonist
-                if planet.get_gravity() == PLANET_HEAVY_G:
-                    summary['gravity_penalty'] -= float(base) / 2
+    pollution *= float(total_pop - tolerant_pop) / float(total_pop)
 
-    # appply buildings scientist_bonus
-    if scientist_num:
-        for b_id in colony.list_buildings():
-            if BUILDINGS[b_id].has_key("scientist_bonus"):
-                b_sum_key = "%s ... bonus" % BUILDINGS[b_id]['name']
-                summary[b_sum_key] = scientist_num * BUILDINGS[b_id]['scientist_bonus']
+    return round(pollution)
+# ------------------------------------------------------------------------------
+def get_hero_bonus(hero, skill_name):
+    # Note: all hero bonuses accessed here are expected to be percentages
+    # expressed as a value of (0.0 -> 100.0)
+    if hero and hero.has_key(skill_name):
+        bonus = hero['skills'][skill_name] * (hero['level'] + 1)
+        return bonus
+    return 0.0
+# ------------------------------------------------------------------------------
+def colonist_food_base(colonist, colonist_player, planet, food_per_farmer):
+    ### JWL: TODO I forget, do Natives and Androids have a fixed food base?
+    # if colonist['android']: return 2.0
+    # if colonist['native']:  return 2.0
+    # if colonist['rioting']: return min(1.0, planet.i_foodbase)
+    b_is_aquatic_planet = (planet.i_terrain in [K_TERRAIN_OCEAN, K_TERRAIN_TERRAN])
+    colonist_food = planet.i_foodbase
+    if b_is_aquatic_planet and colonist_player.get_racepick_item('aquatic'):
+        colonist_food += 1
+    return colonist_food * (colonist_player.get_racepick_item('food') + 100.0)
+# ------------------------------------------------------------------------------
+def colonist_industry_base(colonist, colonist_player, planet, industry_per_worker):
+    i_worker_base = RULES['worker_base'][planet.get_minerals()]
 
-    # Government bonus
-    morale_bonus = (morale * (float(sum(summary.values())))) / 100
+    ### JWL: TODO I forget, do Androids have a fixed industry base?
+    # if colonist['android']: return 2.0
+    # Note: natives and rioters cannot be workers, so no check done here.
 
-    if player_goverment == GOVERMENT_DEMOCRACY:
-        summary['government_bonus'] = float(sum(summary.values()) - summary['gravity_penalty']) * 0.5
-    elif player_goverment == GOVERMENT_FEUDAL:
-        summary['government_bonus'] = round(round(sum(summary.values()) - summary['gravity_penalty']) * -0.5)
+    industry_base            = 0
+    industry_per_worker      = 0
+    industry_per_colony      = 0
+    industry_bonus_gov       = 0
+    industry_bonus_hero      = 0
+    industry_bonus_tech      = 0
+    industry_bonus_gravity   = 0
+    industry_pollution       = 0
+    industry_total           = 0
+# ------------------------------------------------------------------------------
+def colonist_morale_mult(colonist, morale_total):
+    # if colonist['android']: return 1.0
+    # if colonist['rioting']: return 1.0
+    return morale_total / 100.0
+# ------------------------------------------------------------------------------
+def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
 
-    if morale_bonus:
-        summary['morale_bonus'] = morale_bonus
+    morale_base              = 0
+    morale_bonus_gov         = 0
+    morale_bonus_hero        = 0
+    morale_bonus_building    = 0
+    morale_bonus_tech        = 0
+    morale_total             = 0
+    food_gravity             = 0
+    food_base                = 0
+    food_per_farmer          = 0
+    food_per_colony          = 0
+    food_bonus_gov           = 0
+    food_bonus_hero          = 0
+    food_total               = 0
+    industry_pollution       = 0
+    industry_gravity         = 0
+    industry_base            = 0
+    industry_per_worker      = 0
+    industry_per_colony      = 0
+    industry_bonus_gov       = 0
+    industry_bonus_hero      = 0
+    industry_total           = 0
+    research_gravity         = 0
+    research_base            = 0
+    research_per_scientist   = 0
+    research_per_colony      = 0
+    research_bonus_gov       = 0
+    research_bonus_hero      = 0
+    research_bonus_planet    = 0
+    research_total           = 0
 
-    # appply buildings research
-    for b_id in colony.list_buildings():
-        if BUILDINGS[b_id].has_key("research"):
-            b_sum_key = "%s ... research" % BUILDINGS[b_id]['name']
-            summary[b_sum_key] = BUILDINGS[b_id]['research']
+    print("=== compute_prod_summary ===")
 
-    return summary
-# /compose_research_summary
+    o_owner               = PLAYERS[colony.i_owner_id]
+    i_owner_goverment     = o_owner.get_racepick_item('goverment')
+    i_num_colonists       = colony.total_population()
+    b_has_gravity_gen     = colony.has_building(Data_BUILDINGS.B_GRAVITY_GENERATOR)
 
-def compose_morale_summary(RULES, colony, colony_leader, PLAYERS):
-    ME = PLAYERS[colony.get_owner()]
-    BUILDINGS = RULES['buildings']
-    TECH_TABLE = RULES['tech_table']
+    print colony.v_building_ids
+    print i_owner_goverment
+    print i_num_colonists
+    print b_has_gravity_gen
+
+    for b_id in colony.v_building_ids:
+        d_building = RULES['buildings'][b_id]
+        morale_bonus_gov          += d_building['morale_bonus_gov'][i_owner_goverment]
+        morale_bonus_building     += d_building['morale_bonus']
+        food_per_farmer           += d_building['food_per_farmer']
+        food_per_colony           += d_building['food_per_colony']
+        industry_per_worker       += d_building['industry_per_worker']
+        industry_per_colony       += d_building['industry_per_colony']
+        industry_per_colony       += d_building['industry_by_minerals'][colony.o_planet.i_minerals]
+        industry_per_colony       += d_building['industry_per_colonist'] * i_num_colonists
+        research_per_scientist    += d_building['research_per_scientist']
+        research_per_colony       += d_building['research_per_colony']
+
+    for tech_id in o_owner.v_known_techs:
+        d_tech = RULES['tech_table'][tech_id]
+        morale_bonus_gov           = max(moral_bonus_gov, TECH_TABLE[tech_id]['morale_bonus_gov'][player_goverment])
+        morale_bonus_tech         += d_tech['morale_bonus']
+        food_per_farmer           += d_tech['food_per_farmer']
+        industry_per_worker       += d_tech['industry_per_worker']
+        research_per_scientist    += d_tech['research_per_scientist']
+
+    # ---------------------------------------------------------------------------
+    # Finish MORALE computation first --
+    #     it is used as a multiplier for the others.
+    # ---------------------------------------------------------------------------
+
+    morale_base = RULES['governments'][i_owner_goverment]['morale']
+
+    # The gov_morale_bonus is elimination of the government morale penalty,
+    # so it cannot ever go above the original penalty amount.
+    morale_bonus_gov  = min(20, morale_bonus_gov)
+
+    morale_bonus_hero = get_hero_bonus(colony_leader, 'morale_bonus')
+
+    morale_total = 100.0 + morale_base + morale_bonus_gov + morale_bonus_building + \
+                   morale_bonus_tech + morale_bonus_hero
+
+    print("morale_base              = %s" % morale_base)
+    print("morale_bonus_gov         = %s" % morale_bonus_gov)
+    print("morale_bonus_hero        = %s" % morale_bonus_hero)
+    print("morale_bonus_building    = %s" % morale_bonus_building)
+    print("morale_bonus_tech        = %s" % morale_bonus_tech)
+    print("morale_total             = %s" % morale_total)
+
+    # ---------------------------------------------------------------------------
+    # Finish FOOD computation
+    # ---------------------------------------------------------------------------
+
+    for colonist in colony.d_colonists[K_FARMER]:
+        colonist_player = PLAYERS[colonist.race]
+        colonist_food   = colonist_food_base(colonist, colonist_player, colony.o_planet, food_per_farmer)
+        colonist_food  *= colonist_morale_mult(colonist, morale_total)
+        food_base      += colonist_food
+
+    food_bonus_gov  = RULES['governments'][i_owner_goverment]['food_bonus']
+    food_bonus_hero = get_hero_bonus(colony_leader, 'food_bonus')
+
+    food_total      = (food_base + food_per_colony + food_gravity) * \
+                      (100.0 + food_bonus_gov + food_bonus_hero) / 100.0
+
+    print("food_gravity             = %s" % food_gravity)
+    print("food_base                = %s" % food_base)
+    print("food_per_farmer          = %s" % food_per_farmer)
+    print("food_per_colony          = %s" % food_per_colony)
+    print("food_bonus_gov           = %s" % food_bonus_gov)
+    print("food_bonus_hero          = %s" % food_bonus_hero)
+    print("food_total               = %s" % food_total)
+
+    # ---------------------------------------------------------------------------
+    # Finish INDUSTRY computation
+    # ---------------------------------------------------------------------------
+
+    for colonist in colony.d_colonists[K_WORKER]:
+        colonist_player    = PLAYERS[colonist.race]
+        colonist_industry  = colonist_industry_base(colonist, colonist_player, colony.o_planet, industry_per_worker)
+        colonist_industry *= colonist_morale_mult(colonist, morale_total)
+        industry_base     += colonist_industry
+        industry_gravity  += colonist_industry * colonist.get_gravity_penalty(colony.o_planet, b_has_gravity_gen)
+
+    industry_bonus_gov  = RULES['governments'][i_owner_goverment]['industry_bonus']
+    industry_bonus_hero = get_hero_bonus(colony_leader, 'industry_bonus')
+
+    industry_total = (industry_base + industry_per_colony + industry_gravity) * \
+                      (100.0 + industry_bonus_gov + industry_bonus_hero) / 100.0
+
+    industry_pollution = count_colony_pollution(RULES, colony, colony_leader, industry_total, PLAYERS)
+    industry_total    -= industry_pollution
+
+    print("industry_pollution           = %s" % industry_pollution)
+    print("industry_gravity             = %s" % industry_gravity)
+    print("industry_base                = %s" % industry_base)
+    print("industry_per_worker          = %s" % industry_per_worker)
+    print("industry_per_colony          = %s" % industry_per_colony)
+    print("industry_bonus_gov           = %s" % industry_bonus_gov)
+    print("industry_bonus_hero          = %s" % industry_bonus_hero)
+    print("industry_total               = %s" % industry_total)
+
+    # ---------------------------------------------------------------------------
+    # Finish RESEARCH computation
+    # ---------------------------------------------------------------------------
+
+    for colonist in colony.d_colonists[K_SCIENTIST]:
+        colonist_player    = PLAYERS[colonist.race]
+        colonist_research  = colonist_industry_base(colonist, colonist_player, colony.o_planet, research_per_scientist)
+        colonist_research *= colonist_morale_mult(colonist, morale_total)
+        research_base     += colonist_research
+        research_gravity  += colonist_research * colonist.get_gravity_penalty(colony.o_planet, b_has_gravity_gen)
+
+    research_bonus_gov    = RULES['governments'][i_owner_goverment]['research_bonus']
+    research_bonus_hero   = get_hero_bonus(colony_leader, 'research_bonus')
+    research_bonus_planet = 25.0 if colony.o_planet.has_artifacts() else 0.0
+
+    research_total = (research_base + research_per_colony + research_gravity) * \
+                      (100.0 + research_bonus_gov + research_bonus_hero + research_bonus_planet) / 100.0
+
+    print("research_gravity             = %s" % research_gravity)
+    print("research_base                = %s" % research_base)
+    print("research_per_scientist       = %s" % research_per_scientist)
+    print("research_per_colony          = %s" % research_per_colony)
+    print("research_bonus_gov           = %s" % research_bonus_gov)
+    print("research_bonus_hero          = %s" % research_bonus_hero)
+    print("research_bonus_planet        = %s" % research_bonus_planet)
+    print("research_total               = %s" % research_total)
+
+    # ---------------------------------------------------------------------------
+    # Finish BC computation
+    # ---------------------------------------------------------------------------
+
+    # ---------------------------------------------------------------------------
+    # Compose summary
+    # ---------------------------------------------------------------------------
 
     summary = {
-#        'government_morale':    0,
-#        'marine_barracks':        0,
-#        'psionics':            0,
-#        'holo_simulator':        0,
-#        'virtual_reality_network':    0
+        'morale_base':              morale_base,
+        'morale_bonus_gov':         morale_bonus_gov,
+        'morale_bonus_hero':        morale_bonus_hero,
+        'morale_bonus_building':    morale_bonus_building,
+        'morale_bonus_tech':        morale_bonus_tech,
+        'morale_total':             morale_total,
+        'food_gravity':             food_gravity,
+        'food_base':                food_base,
+        'food_per_farmer':          food_per_farmer,
+        'food_per_colony':          food_per_colony,
+        'food_bonus_gov':           food_bonus_gov,
+        'food_bonus_hero':          food_bonus_hero,
+        'food_total':               food_total,
+        'industry_pollution':       industry_pollution,
+        'industry_gravity':         industry_gravity,
+        'industry_base':            industry_base,
+        'industry_per_worker':      industry_per_worker,
+        'industry_per_colony':      industry_per_colony,
+        'industry_bonus_gov':       industry_bonus_gov,
+        'industry_bonus_hero':      industry_bonus_hero,
+        'industry_total':           industry_total,
+        'research_gravity':         research_gravity,
+        'research_base':            research_base,
+        'research_per_scientist':   research_per_scientist,
+        'research_per_colony':      research_per_colony,
+        'research_bonus_gov':       research_bonus_gov,
+        'research_bonus_hero':      research_bonus_hero,
+        'research_bonus_planet':    research_bonus_planet,
+        'research_total':           research_total,
     }
-
-#    print(colony.get_owner())
-#    print(PLAYERS[colony.get_owner()])
-#    print(PLAYERS[colony.get_owner()]['racepicks'])
-    player_goverment = PLAYERS[colony.get_owner()].get_racepick_item('goverment')
-    summary['Government Morale'] = RULES['governments'][player_goverment]['morale']
-#    print "@@@ colony::get_morale_summary ... goverment = %i" % player_goverment
-
-    # Marine Barracks ... Eliminates morale penalties for dictatorship and feudal governments
-#    if (colony.buildings[B_MARINE_BARRACKS]) and (player_goverment in [GOVERMENT_FEUDAL, GOVERMENT_FEUDAL2, GOVERMENT_DICTATORSHIP, GOVERMENT_IMPERIUM]):
-#    if colony.has_building(B_MARINE_BARRACKS) and (player_goverment in [GOVERMENT_FEUDAL, GOVERMENT_FEUDAL2, GOVERMENT_DICTATORSHIP, GOVERMENT_IMPERIUM]):
-#        summary['marine_barracks'] = 20
-
-    # Holo Simulator ... Increases a planet's morale by +20%
-#    if colony.has_building(B_HOLO_SIMULATOR):
- #       summary['holo_simulator'] = 20
-
-
-    for b_id in colony.list_buildings():
-
-        # appply buildings government_morale_bonus
-        if BUILDINGS[b_id].has_key("government_morale_bonus"):
-            b_sum_key = "%s_gov" % BUILDINGS[b_id]['name']
-            summary[b_sum_key] = BUILDINGS[b_id]['government_morale_bonus'][player_goverment]
-
-        # appply buildings morale_bonus
-        if BUILDINGS[b_id].has_key("morale_bonus"):
-            b_sum_key = BUILDINGS[b_id]['name']
-            summary[b_sum_key] = BUILDINGS[b_id]['morale_bonus']
-
-    # Psionics ... Morale on all planets is increased by 10% for dictatorship and imperium government
-
-#    print "@@@ colony::get_morale_summary ... TECH_PSIONICS = %i" % PLAYERS[colony.i_owner_id]['technologies'][K_TECH_PSIONICS]
-#    if (K_TECH_PSIONICS in PLAYERS[colony.i_owner_id].known_techs) and (player_goverment in [GOVERMENT_DICTATORSHIP, GOVERMENT_IMPERIUM]):
-#        summary['psionics'] = 10
-
-    for tech_id in ME.known_techs:
-
-        # appply technologies government_morale_bonus
-        if TECH_TABLE[tech_id].has_key("government_morale_bonus"):
-            b_sum_key = "%s_gov" % TECH_TABLE[tech_id]['name']
-            summary[b_sum_key] = TECH_TABLE[tech_id]['government_morale_bonus'][player_goverment]
-
-        # appply technologies morale_bonus
-        if TECH_TABLE[tech_id].has_key("morale_bonus"):
-            b_sum_key = "%s_bonus" % TECH_TABLE[tech_id]['name']
-            summary[b_sum_key] = TECH_TABLE[tech_id]['morale_bonus']
-
-    if colony_leader and colony_leader['skills'].has_key('morale_bonus'):
-#        print colony_leader
-#        print "leader morale_bonus = %i" % leader_morale_bonus
-        summary['Leader Bonus'] = round((colony_leader['skills']['morale_bonus'] + (colony_leader['level'] * colony_leader['skills']['morale_bonus'])) / 10) * 10
+    print '+++++++++++++++ compose_prod_summary:'
+    print summary
 
     return summary
-# /compose_morale_summary
-
-"""
+# ------------------------------------------------------------------------------
+def compose_bc_summaryxxx(RULES, colony, PLAYERS):
+    """
     Returns BC Summary
-"""
-def compose_bc_summary(RULES, colony, PLAYERS):
+    """
     planet = colony.planet()
 
     summary = {
@@ -430,168 +331,135 @@ def compose_bc_summary(RULES, colony, PLAYERS):
 
     # Taxes Collected
     # TODO: do natives and androids produce taxes too?
-    summary['taxes_collected'] = len(colony.colonists[FARMER] + colony.colonists[WORKER] + colony.colonists[SCIENTIST])
+    summary['taxes_collected'] = colony.total_population()
 
     # Special Income - Gold Deposits
-    if planet.get_special() == 4:
+    if planet.has_gold():
         summary['special_income'] = 5
 
     # Morale Bonus
-    morale = float(colony.morale())
+    morale = float(colony.i_morale)
     summary['morale_bonus'] = round(morale * (float(sum(summary.values()))) / 100)
 
     # Government Bonus
-    player_goverment = PLAYERS[colony.get_owner()].get_racepick_item('goverment')
-    if player_goverment == GOVERMENT_DEMOCRACY:
+    player_goverment = PLAYERS[colony.i_owner_id].get_racepick_item('goverment')
+    if player_goverment == K_GOVERMENT_DEMOCRACY:
         summary['government_bonus'] = int(sum(summary.values()) / 2)
 
     # Planetary Stock Exchange
-    if colony.has_building(B_STOCK_EXCHANGE):
+    if colony.has_building(Data_BUILDINGS.B_STOCK_EXCHANGE):
         summary['stock_exchange'] = summary['taxes_collected']
 
     # Spaceport
-    if colony.has_building(B_SPACEPORT):
+    if colony.has_building(Data_BUILDINGS.B_SPACEPORT):
         summary['spaceport'] = int(summary['taxes_collected'] / 2)
 
     # TODO: Trade Goods ... round the 50% of industry
     build_queue = colony.get_build_queue()
-#    print build_queue[0]
-#    print build_queue[1]
-#    print build_queue[2]
-#    print build_queue[3]
-#    print build_queue[4]
-#    print build_queue[5]
-#    print build_queue[6]
     if (len(build_queue) > 0) and (build_queue[0]['production_id'] == BUILD_TRADE_GOODS):
-        summary['trade_goods'] = int(colony.get_industry() / 2)
-
+        summary['trade_goods'] = int(colony.i_industry / 2)
 
     return summary
-# /compose_bc_summary
-
+# ------------------------------------------------------------------------------
 def get_empty_max_populations():
     return [0, 0, 0, 0, 0, 0, 0, 0]
-# /get_empty_max_populations
+# ------------------------------------------------------------------------------
+def compose_max_populations(RULES, colony, PLAYERS):
+    v_max_populations = get_empty_max_populations()
 
-"""
-http://masteroforion2.blogspot.com/2005/10/maximum-population.html
-"""
-def compose_max_populations(colony, PLAYERS):
-    planet = colony.planet()
-
-    max_populations = get_empty_max_populations()
     if colony.is_outpost():
-        return max_populations
+        return v_max_populations
 
-    size = planet.get_size()
-    terrain = planet.get_terrain()
+    # Determine basic population bonus (actual count of extra colonists).
+    pop_bonus = 0
+    for b_id in colony.v_building_ids:
+        pop_bonus += RULES['buildings'][b_id]['pop_bonus']
 
-    size_multiplier = [5, 10, 15, 20, 25][size]
+    for tech_id in PLAYERS[colony.i_owner_id].v_known_techs:
+        pop_bonus += RULES['tech_table'][tech_id]['pop_bonus']
 
-    for i in range(8):
-        player = PLAYERS[i]
-#        print player['racepicks']
+    # Determine the race types actually present in this colony.
+    v_present = [0, 0, 0, 0, 0, 0, 0, 0]
+    for t in [K_FARMER, K_WORKER, K_SCIENTIST]:
+        for colonist in colony.d_colonists[t]:
+            v_present[colonist.race] = True
 
-        if player.get_racepick_item('aquatic'):
-            terrain_multiplier = [25, 25, 25, 25, 80, 100, 80, 60, 100, 100][terrain]    # Aquatic
-        else:
-            terrain_multiplier = [25, 25, 25, 25, 25, 25, 40, 60, 80, 100][terrain]    # default
+    # Determine the max pop based on race, planet size, and planet terrain.
+    # Then add in the flat population bonus.
 
-        if player.get_racepick_item('tolerant'):
-            terrain_multiplier += 25
+    i_size    = colony.o_planet.i_size
+    i_terrain = colony.o_planet.i_terrain
 
-        terrain_multiplier = min(terrain_multiplier, 100)
+    for i in range(K_MAX_PLAYERS):
+        if v_present[i]:
+            if PLAYERS[i].get_racepick_item('subterranean'):
+                s_racial = 'sub'
+            elif PLAYERS[i].get_racepick_item('aquatic'):
+                s_racial = 'aqua'
+            else:
+                s_racial = ''
+            if PLAYERS[i].get_racepick_item('tolerant'):
+                s_racial += '-tol'
+            v_max_populations[i] = pop_bonus + K_PLANET_POP[s_racial][i_size][i_terrain]
 
-        if player.get_racepick_item('subterranean'):
-            bonus = [2, 4, 6, 8, 10][size]        # Subterranean = 2 pop per each size class
-        else:
-            bonus = 0
-
-    # TODO: Advanced City Planning ... bonus + 5
-
-        max_populations[i] = round((float(size_multiplier * terrain_multiplier) / 100) + bonus)
-
-        if colony.has_building(B_BIOSPHERES):
-            max_populations[i] += 2
-
-    present = [0, 0, 0, 0, 0, 0, 0, 0]
-    for t in [FARMER, WORKER, SCIENTIST]:
-        for colonist in colony.colonists[t]:
-#            print "race: %i" % colonist['race']
-            present[colonist['race']] = 1
-
-#        print "$$$ max_populations: %s $$$ before present filter" % max_populations
-    for i in range(8):
-        max_populations[i] = int(max_populations[i] * present[i])
-
-    return max_populations
-# /get_max_populations
-
-def count_colony_pollution(colony, production, players):
-#    print "$$$ count_colony_pollution $$$"
-    planet = colony.planet()
+    return v_max_populations
+# ------------------------------------------------------------------------------
+def compose_pop_growth(RULES, colony, colony_leader, PLAYERS):
+    """
+    http://masteroforion2.blogspot.com/2005/09/growth-formula.html
+    """
+    v_pop_growth = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     if colony.is_outpost():
-        return 0
+        return v_pop_growth
 
+    v_pop_by_race = colony.get_aggregated_populations()
+    i_total_pop   = colony.total_population()
 
-    if colony.has_building(B_CORE_WASTE_DUMP):
-        return 0
+    f_tech_bonus = 0.0
+    for i_tech_id in PLAYERS[colony.i_owner_id].v_known_techs:
+        f_tech_bonus += TECH_TABLE[i_tech_id]['pop_growth'] / 100.0
 
-    production = float(production)
+    for i_race in range(K_MAX_PLAYERS):
+        i_race_pop = v_pop_by_race[i_race]
+        if i_race_pop > 0:
+            i_max_pop = colony.v_max_populations[i_race]
 
-    tolerant = 0
-    pop = 0
+            b = math.floor((2000 * i_race_pop * max(0, i_max_pop - i_total_pop) / i_max_pop) ** 0.5)
 
-    for t in (FARMER, SCIENTIST, WORKER):
-        for colonist in colony.colonists[t]:
-            pop += 1
-            if players[colonist['race']].get_racepick_item('tolerant'):
-                tolerant += 1
+            g = PLAYERS[i_race].get_racepick_item('population') / 100.0  # g == GrowthPick
+            t = f_tech_bonus    # t == Tech Bonus
+            r = 0               # r == Random Bonus; TODO 1.0 when Population Boom occurring
+            l = get_hero_bonus(colony_leader, 'pop_growth')  # l == Leader Bonus
+            h = 0               # h == Housing; TODO Compute Housing bonus
+            s = 0               # s == Starvation; TODO Compute Starvation bonus (50k pop per missing food)
 
-#    print "    population: %i" % pop
-#    print "    tolerant: %i" % tolerant
-#    print "    non-tolerant: %i" % (pop - tolerant)
-#    print "    planet size: %i" % planet['size']
+            if colony.has_building(Data_BUILDINGS.B_CLONING_CENTER):
+                c = 100 * i_race_pop / i_total_pop
+            else:
+                c = 0
 
-#    print "    production before atm. renewer: %s" % str(production)
-    if colony.has_building(B_ATMOSPHERE_RENEWER):
-        production = math.ceil(production / 4)
-#    print "    production after atm. renewer: %s" % str(production)
+            a = 1 + g + t + r + l + h
 
-    tolerance = [2, 4, 6, 8, 10][planet.get_size()]
+            v_pop_growth[i_race] = int(((a * b) / 100) + math.floor(c) + s)
 
-#    if PLAYERS[self.get_owner()]['technologies'][TECH_NANO_DISASSEMBLERS] == 3:
-    if TECH_NANO_DISASSEMBLERS in players[colony.get_owner()].known_techs:
-        tolerance += tolerance
-
-#    print "    planet tolerance: %i" % tolerance
-    pollution = float(max(0, production - tolerance)) / 2
-#    print "    pollution: %s" % str(pollution)
-
-    pollution = float(pop - tolerant) * pollution / float(pop)
-#    print "    pollution: %s" % str(pollution)
-
-    return round(pollution)
-# /get_colony_pollution
-
-
+    return v_pop_growth
+# ------------------------------------------------------------------------------
 def count_summary_result(summary):
     sum = 0.0
     for k in summary:
         sum += float(summary[k])
     return round(sum)
-
+# ------------------------------------------------------------------------------
 def research_costs(research_areas, area, rp):
     if not area:
         return -1
     else:
         return research_areas[area]['cost']
-# /research_costs
-
+# ------------------------------------------------------------------------------
 def research_turns(cost, progress, rp):
     turns = -1
     if rp > 0:
         turns = int(math.ceil((float(cost) - float(progress)) / float(rp)))
     print("rules::research_turns() ... cost <%d>  progress <%d>  rp <%d>  turns <%d>" % (cost,progress,rp,turns))
     return turns
-# /research_turns
+# ------------------------------------------------------------------------------

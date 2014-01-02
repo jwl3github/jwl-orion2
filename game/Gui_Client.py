@@ -536,7 +536,7 @@ class Gui_Client(object):
                     scr.draw()
                     me = Network_Client.Client.get_me()
                     print 'New turn ... need to do finished research/prod popups...'
-                    if not me.i_research_item:
+                    if not me.i_research_tech_id:
                         trigger = {'action': "screen", 'screen': "research", 'rect': None}
                         self.process_screen_trigger(trigger, scr)
 

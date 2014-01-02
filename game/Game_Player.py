@@ -25,7 +25,7 @@ class Game_Player(Game_Object.Game_Object):
         self.i_food                 = 0
         self.i_research_progress    = 0
         self.i_research_area        = 0
-        self.i_research_item        = 0
+        self.i_research_tech_id     = 0
         self.v_known_techs          = []
         self.v_prototypes           = []
         self.v_tributes             = []
@@ -55,7 +55,7 @@ class Game_Player(Game_Object.Game_Object):
         self.i_food                 = d_init_struct['food']
         self.i_research_progress    = d_init_struct['research_progress']
         self.i_research_area        = d_init_struct['research_area']
-        self.i_research_item        = d_init_struct['research_item']
+        self.i_research_tech_id     = d_init_struct['research_tech_id']
         self.v_known_techs          = d_init_struct['known_techs']
         self.v_prototypes           = d_init_struct['prototypes']
         self.v_tributes             = d_init_struct['tributes']
@@ -151,7 +151,7 @@ class Game_Player(Game_Object.Game_Object):
         print(self.serialize())
 # ------------------------------------------------------------------------------
     def print_research_debug(self):
-        print("research_item = %i, research_area = %i, research_progress = %i, " % (self.research_item, self.research_area, self.research_progress))
+        print("research_tech_id = %i, research_area = %i, research_progress = %i, " % (self.i_research_tech_id, self.i_research_area, self.i_research_progress))
 # ------------------------------------------------------------------------------
     def as_str(self, x):
         return "'" + x + "'"
@@ -182,7 +182,7 @@ class Game_Player(Game_Object.Game_Object):
                    '\nself.i_research_progress   = ' + str(self.i_research_progress)    +  \
                    '\nself.v_research_areas      = ' + str(self.v_research_areas)       +  \
                    '\nself.i_research_area       = ' + str(self.i_research_area)        +  \
-                   '\nself.i_research_item       = ' + str(self.i_research_item)        +  \
+                   '\nself.i_research_tech_id    = ' + str(self.i_research_tech_id)     +  \
                    '\nself.i_research_cost       = ' + str(self.i_research_cost)        +  \
                    '\nself.i_research_turns_left = ' + str(self.i_research_turns_left)
 

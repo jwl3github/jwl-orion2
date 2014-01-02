@@ -41,14 +41,17 @@ class Game_Planet(Game_Object.Game_Object):
         self.i_special          = d_init_struct['special']
         self.i_flags            = d_init_struct['flags']
 
+    def has_gold(self):
+        return self.i_special == K_SPECIAL_GOLD
+
+    def has_artifacts(self):
+        return self.i_special == K_SPECIAL_ARTIFACTS
+
     def get_size_text(self):
         return Data_CONST.get_planet_size_text(self.i_size)
 
     def get_terrain_text(self):
         return Data_CONST.get_planet_terrain_text(self.i_terrain)
-
-    def get_gravity_text(self):
-        return Data_CONST.get_planet_gravity_text(self.i_gravity)
 
     def get_minerals_text(self):
         return Data_CONST.get_planet_minerals_text(self.i_minerals)
@@ -62,4 +65,15 @@ class Game_Planet(Game_Object.Game_Object):
     def is_planet(self):
         return self.i_type == K_PLANET_HABITABLE
 
+    def get_gravity_text(self):
+        return Data_CONST.get_planet_gravity_text(self.i_gravity)
+
+    def is_low_g(self):
+        return (self.i_gravity == K_PLANET_LOW_G)
+
+    def is_normal_g(self):
+        return (self.i_gravity == K_PLANET_NORMAL_G)
+
+    def is_high_g(self):
+        return (self.i_gravity == K_PLANET_HIGH_G)
 

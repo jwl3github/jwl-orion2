@@ -65,7 +65,7 @@ def debug_players(GAME):
         status = player['technologies'][i]
         if status == 3:
             print "         #%.3i %s" % (i, technames[i])
-        elif player['research_item'] and (i == player['research_item']-1):
+        elif player['research_tech_id'] and (i == player['research_tech_id']-1):
             print "         #%.3i %s ... RESEARCHING" % (i, technames[i])
     print
 # ------------------------------------------------------------------------------

@@ -17,7 +17,7 @@ class Network_Server(object):
         self.s_status             = 'init'
         self.i_port               = port
         self.i_socket_buffer_size = 4096
-        self.r_game               = game
+        self.o_game               = game
         self.d_players_status     = {}
         self.d_threads            = {}
         self.d_threads_next_turn  = {}
@@ -73,10 +73,10 @@ class Network_Server(object):
         return K_MAX_PLAYERS
 
     def get_update_for_player(self, player_id):
-        return self.r_game.get_update_for_player(player_id)
+        return self.o_game.get_update_for_player(player_id)
 
     def get_data_for_player(self, player_id):
-        return self.r_game.get_data_for_player(player_id)
+        return self.o_game.get_data_for_player(player_id)
 
     def send_data_to_game_client(self, client_socket, thread_id, data):
         s = pickle.dumps(data)
@@ -102,8 +102,10 @@ class Network_Server(object):
 # ------------------------------------------------------------------------------
     def check_next_turn_singleplayer(self):
         # in single player human is always player_id 0
+        #self.log_info("checking for next turn (single player):")
         for thread_id, player_id in self.d_threads_next_turn.items():
-            if player_id == 0:
+            if player_id != -1:
+                #self.log_info(" -- NEXT TURN INDICATED --")
                 return True
         return False
 # ------------------------------------------------------------------------------
@@ -117,7 +119,7 @@ class Network_Server(object):
                 pl_st[player_id] = True
         self.log_info("Server::check_next_turn_multiplayer() ... pl_st = %s" % str(pl_st))
         # all players must confirm next turn
-        return len(pl_st) == self.r_game.count_players()
+        return len(pl_st) == self.o_game.count_players()
 # ------------------------------------------------------------------------------
     def handle_recv_client_data(self, player_id, client_socket, thread_id, data):
         self.log_info("data received from client # %s, player_id = %i" % (thread_id, player_id))
@@ -172,12 +174,12 @@ class Network_Server(object):
             self.send_data_to_game_client(client_socket, thread_id, data)
 
         elif ACTION == "SET_RESEARCH":
-            research_item = PARAMS['tech_id']
-            if not self.r_game.update_research(player_id, research_item):
-                self.log_error("Game::set_research() failed ... player_id = %i, research_item = %i" % (player_id, research_item))
+            i_tech_id = PARAMS['tech_id']
+            if not self.o_game.update_research(player_id, i_tech_id):
+                self.log_error("Game::set_research() failed ... player_id = %i, i_tech_id = %i" % (player_id, i_tech_id))
 
         elif ACTION == "SET_BUILD_QUEUE":
-            if not self.r_game.set_colony_build_queue(player_id, PARAMS['colony_id'], PARAMS['build_queue']):
+            if not self.o_game.set_colony_build_queue(player_id, PARAMS['colony_id'], PARAMS['build_queue']):
                 self.log_error("Game::set_colony_build_queue() failed ... player_id = %i, colony_id = %i" % (player_id, PARAMS['colony_id']))
 
         else:
@@ -241,7 +243,9 @@ class Network_Server(object):
         self.set_turn()
 
         while not self.check_shutdown():
-            print 'run Server'
+            #self.log_info('>>>>>>>>>>>>>>>>>> Run Server >>>>>>>>>>>>>>>>')
+            # This polls for new players and for NEW TURN.
+            # Rate of polling determined in Network_GameSocket.accept()
             try:
                 client_socket, (client_host, client_port) = server_socket.accept()
                 thread_id = self.spawn_thread(client_socket, client_host, client_port)
@@ -252,7 +256,6 @@ class Network_Server(object):
 #           self.show_next_turns()
 
             if self.d_threads:
-                print 'handle_thread'
                 clean_threads = []
                 for thread_id in self.d_threads:
                     is_alive = self.d_threads[thread_id].is_alive()
@@ -266,10 +269,10 @@ class Network_Server(object):
 
                 if self.check_next_turn():
                     self.log_info("got True from Server::check_next_turn() >>> DOING NEXT TURN!")
-                    self.r_game.next_turn()
+                    self.o_game.next_turn()
                     # clean next turn flags for all threads
                     for thread_id in self.d_threads:
                         self.clean_next_turn(thread_id)
 
-        self.log_info("Closing serverSocket")
+        self.log_info('>>>>>>>>>>>>>>>>>> Shutdown Server >>>>>>>>>>>>>>>>')
         server_socket.close()

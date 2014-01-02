@@ -120,10 +120,10 @@ class Moo2_Savegame(object):
         SPECIAL_SKILL_MAP = {
                 1:           [ 'pollution_bonus',   10  ],  # bit  0 = Environmentalist
                 2:           [ 'pollution_bonus',   15  ],  # bit  1 = Environmentalist*
-                4:           [ 'farming_bonus',     10  ],  # bit  2 = Farming Leader
-                8:           [ 'farming_bonus',     15  ],  # bit  3 = Farming Leader*
-                16:          [ 'income_bonus',      10  ],  # bit  4 = Financial Leader
-                32:          [ 'income_bonus',      15  ],  # bit  5 = Financial Leader*
+                4:           [ 'food_bonus',        10  ],  # bit  2 = Farming Leader
+                8:           [ 'food_bonus',        15  ],  # bit  3 = Farming Leader*
+                16:          [ 'bc_bonus',          10  ],  # bit  4 = Financial Leader
+                32:          [ 'bc_bonus',          15  ],  # bit  5 = Financial Leader*
                 64:          [ 'instructor',        0.7 ],  # bit  6 = Instructor
                 128:         [ 'instructor',        1.1 ],  # bit  7 = Instructor*
                 256:         [ 'industry_bonus',    10  ],  # bit  8 = Labor Leader
@@ -232,7 +232,7 @@ class Moo2_Savegame(object):
             [ 'research_progress',         'H'     ],
             [ '',                          '310x'  ],  # 0x320 - 0x1ea
             [ 'research_area',             'B'     ],
-            [ 'research_item',             'B'     ],
+            [ 'research_tech_id',          'B'     ],
             [ '',                          '1405x' ], # 0x89E - 0x321
             [ 'race_goverment',            'B'     ],
             [ 'race_population',           'b'     ],
@@ -378,7 +378,7 @@ class Moo2_Savegame(object):
         return d_planets
 # ------------------------------------------------------------------------------
     def parse_colony_pop(self, data, i_rec_offset, i_population):
-        d_colony_pop = {0x02: [], 0x03: [], 0x82: []}
+        d_colony_pop = {K_FARMER: [], K_WORKER: [], K_SCIENTIST: []}
         STRUCT_TABLE = [ ['a','B'], ['b','B'],['c','B'],['d','B'] ]
         for i in range(i_population):
             i_offset          = i_rec_offset + 0x0C + (4 * i)

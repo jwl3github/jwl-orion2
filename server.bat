@@ -1,2 +1,3 @@
-python.exe game\openmoo2_server.py
+cd game
+python.exe openmoo2_server.py
 pause

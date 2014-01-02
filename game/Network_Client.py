@@ -139,9 +139,9 @@ class Network_Client(object):
             print response
         return response == 'NEXT_TURN_ACK'
 
-    def set_research(self, tech_id):
-#print("Network_Client::set_research() ... tech_id = %i" % tech_id)
-        self.send("SET_RESEARCH", {'tech_id': tech_id})
+    def set_research(self, i_tech_id):
+#print("Network_Client::set_research() ... tech_id = %i" % i_tech_id)
+        self.send("SET_RESEARCH", {'tech_id': i_tech_id})
         #JWL# return self.fetch_game_data()
         return self.fetch_update_data()
 

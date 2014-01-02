@@ -18,6 +18,7 @@ TECH_TABLE = {
     3: {
         'name':  "Advanced City Planning",
         'area':  42,
+        'pop_bonus':  +5,
     },
     4: {
         'name':  "Advanced Damage Control",
@@ -438,11 +439,12 @@ TECH_TABLE = {
     107: {
         'name':  "Microbiotics",
         'area':  34,
+        'pop_growth':  25.0,
     },
     108: {
         'name':  "Microlite Construction",
         'area':  53,
-        'worker_bonus': +1,
+        'industry_per_worker': +1,
     },
     109: {
         'name':  "Outpost Ship",
@@ -464,6 +466,7 @@ TECH_TABLE = {
     113: {
         'name':  "Nano Disassemblers",
         'area':  53,
+        'industry_pollution_base_ratio':  2.0,
     },
     114: {
         'name':  "Neural Scanner",
@@ -600,7 +603,7 @@ TECH_TABLE = {
     147: {
         'name':                             "Psionics",
         'area':                             30,
-        'government_morale_bonus':          [0, 0, 10, 10, 0, 0, 0], # percent
+        'morale_bonus_gov':                 [0, 0, 10, 10, 0, 0, 0], # percent
     },
     148: {
         'name':  "Pulsar",
@@ -785,6 +788,7 @@ TECH_TABLE = {
     193: {
         'name':  "Universal Antidote",
         'area':  17,
+        'pop_growth':  50.0,
     },
     194: {
         'name':  "Urridium Fuel Cells",
@@ -861,8 +865,24 @@ TECH_TABLE = {
     },
 }
 
-
-
+# ------------------------------------------------------------------------------
+def apply_tech_key_default(tech_id, key, value):
+    if not TECH_TABLE[tech_id].has_key(key):
+        TECH_TABLE[tech_id][key] = value
+# ------------------------------------------------------------------------------
+def regularize_tech_keys():
+    ''' Makes sure that the base key set is present to avoid a lot of extraneous has_key() calls. '''
+    for tech_id in TECH_TABLE.keys():
+        apply_tech_key_default(tech_id, 'description',            'TBD')
+        apply_tech_key_default(tech_id, 'morale_bonus',           0)
+        apply_tech_key_default(tech_id, 'morale_bonus_gov',       [0, 0, 0, 0, 0, 0, 0])
+        apply_tech_key_default(tech_id, 'pop_bonus',              0)
+        apply_tech_key_default(tech_id, 'pop_growth',             0.0)
+        apply_tech_key_default(tech_id, 'food_per_farmer',        0)
+        apply_tech_key_default(tech_id, 'industry_per_worker',    0)
+        apply_tech_key_default(tech_id, 'research_per_scientist', 0)
+        apply_tech_key_default(tech_id, 'industry_pollution_base_ratio',  1.0)
+# ------------------------------------------------------------------------------
 def get_technames():
     return [
         "Achilles Targeting Unit",
