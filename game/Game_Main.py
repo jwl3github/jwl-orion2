@@ -164,6 +164,11 @@ class Game_Main(object):
 # ------------------------------------------------------------------------------
     def recount_colonies(self):
         print "=== Recount Colonies ==="
+
+        # JWL: TODO Optimize with a per-player 'dirty' flag (or set player.d_allowed_production to None?)
+        for i_player_id, o_player in self.d_players.items():
+            o_player.determine_allowed_production(self.d_rules)
+
         for colony_id, colony in self.d_colonies.items():
             print("Game::recount_colonies() ... colony_id = %i" % colony_id)
             if colony.exists():
@@ -172,7 +177,7 @@ class Game_Main(object):
 # ------------------------------------------------------------------------------
     def colony_owned_by(self, i_colony_id, i_player_id):
         """ Returns True if the given i_colony_id belongs to the indicated player. """
-        return self.d_colonies.has_key(i_colony_id) and self.d_colonies[i_colony_id].is_owned_by(i_player_id)
+        return self.d_colonies[i_colony_id].is_owned_by(i_player_id)
 # ------------------------------------------------------------------------------
     def get_governor(self, i_colony_id):
         i_owner_id  = self.d_colonies[i_colony_id].i_owner_id

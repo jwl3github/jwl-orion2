@@ -5,7 +5,7 @@ import Data_CONST
 import Data_TECH
 from Data_CONST import *
 
-WORKER_BASE_BY_PLANET_MINERALS = { 0:1, 1:2, 2:3, 3:5 , 4:8, }
+WORKER_BASE_BY_PLANET_MINERALS = { 0:1, 1:2, 2:3, 3:5, 4:8, }
 
 PLANETS_SPECIALS = {
     Data_CONST.K_SPECIAL_ARTIFACTS: {'research_bonus': +2},

@@ -16,10 +16,11 @@ class Game_Colony(Game_Object.Game_Object):
         self.o_planet                   = None
         self.i_industry_progress        = 0
         self.i_bc                       = 0
+        self.b_mixed_race               = False
         self.d_colonists                = {K_FARMER: [], K_WORKER: [], K_SCIENTIST: []}
         self.v_build_queue              = []
         self.v_build_queue_ids          = []
-        self.v_available_production     = []
+        self.d_available_production     = {}
         self.v_max_populations          = []
         # Loaded:
         self.i_colony_id                = i_colony_id
@@ -86,9 +87,8 @@ class Game_Colony(Game_Object.Game_Object):
                 o_colonist.c      = d_colonist['c']
                 o_colonist.d      = d_colonist['d']
                 self.d_colonists[i_type].append(o_colonist)
-# ------------------------------------------------------------------------------
-    def print_info(self):
-        print "  owner_id: %i" % self.i_owner_id
+                if o_colonist.race != self.i_owner_id:
+                    self.b_mixed_race = True
 # ------------------------------------------------------------------------------
     def has_building(self, b_id):
         return b_id in self.v_building_ids
@@ -97,73 +97,25 @@ class Game_Colony(Game_Object.Game_Object):
         if not self.has_building(building_id):
             self.v_building_ids.append(building_id)
 # ------------------------------------------------------------------------------
-    def init_available_production(self, rules, players):
+    def init_available_production(self, RULES, PLAYERS):
         """returns a dict of production id lists"""
 
-        rules_buildings = rules['buildings']
-        known_techs     = players[self.i_owner_id].v_known_techs
-        replaced        = []
+        d_allowed = PLAYERS[self.i_owner_id].d_allowed_production
+        v_current = self.v_building_ids
 
-        for production_id in self.v_building_ids:
-            if rules_buildings[production_id].has_key('replaces'):
-                for replaces_id in rules_buildings[production_id]['replaces']:
-                    replaced.append(replaces_id)
-
-        available = {'building': [], 'xship': [], 'special': [], 'capitol': []}
-        for production_id, production in rules_buildings.items():
-            if production['tech']:
-                if (production['tech'] in known_techs) and (not self.has_building(production_id)) and (not production_id in replaced):
-                    # knows required technology and not built
-                    available_item = "%s:%i" % (production['name'], production_id)
-                    if production.has_key('type'):
-                        available[production['type']].append(available_item)
-                    else:
-                        available['building'].append(available_item)
-
-        for group_id in available:
-            available[group_id].sort()
-            for i in range(len(available[group_id])):
-                available[group_id][i] = int(available[group_id][i].split(":")[1])
+        for i_building_id in self.v_building_ids:
+            v_current += RULES['buildings'][i_building_id]['replaces']
 
 # TODO: check for gravity and colonists, if the gravity generator is not needed here remove it from the list
 # TODO: check for colonists if the alien management center is needed, otherwise remove it from the list
 
-        self.v_available_production = available
-# ------------------------------------------------------------------------------
-    def get_available_production(self):
-        return self.v_available_production
-# ------------------------------------------------------------------------------
-    def display_summary(self, title, foot, summary):
-        v_summary = []
-        total = rules.count_summary_result(summary)
-        print("+----------------------------------------------------+")
-        print("+ %s +" % title.ljust(50))
-        print("+ ================================================== +")
-        for k in summary:
-            if summary[k]:
-                print("+ %s ... %s +" % (str(summary[k]).rjust(6), k.ljust(39)))
-                v_summary.append("%s   %s" % (str(summary[k]).rjust(6), k.ljust(39)))
-        print("+                                                    +")
-        print("+ % 6i ... %s +" % (total, foot.ljust(39)))
-        print("+----------------------------------------------------+")
-        v_summary.append(' ')
-        v_summary.append("% 6i ... %s" % (total, foot.ljust(39)))
-        return v_summary
-# ------------------------------------------------------------------------------
-    def print_morale_summary(self):
-        return self.display_summary("Morale Summary", "Total", self.morale_summary)
-# ------------------------------------------------------------------------------
-    def print_bc_summary(self):
-        return self.display_summary("BC Summary", "Total Income", self.bc_summary)
-# ------------------------------------------------------------------------------
-    def print_food_summary(self):
-        return self.display_summary("Food Summary", "Total Food Produced", self.food_summary)
-# ------------------------------------------------------------------------------
-    def print_industry_summary(self):
-        return self.display_summary("Industry Summary", "Total Industry Produced", self.industry_summary)
-# ------------------------------------------------------------------------------
-    def print_research_summary(self):
-        return self.display_summary("Research Summary", "Research Industry Produced", self.research_summary)
+        # Note: need to preserve ordering since it is pre-sorted alphabetical.
+        self.d_available_production['building']  = [x for x in d_allowed['building'] if x not in v_current]
+        self.d_available_production['special']   = [x for x in d_allowed['special']  if x not in v_current]
+        self.d_available_production['xship']     = []
+        self.d_available_production['trade']     = d_allowed['trade']
+        self.d_available_production['housing']   = d_allowed['housing'] if self.i_population < self.i_max_population else []
+        self.d_available_production['proto']     = d_allowed['proto']
 # ------------------------------------------------------------------------------
     def exists(self):
         return self.i_owner_id < 0xff
@@ -203,9 +155,9 @@ class Game_Colony(Game_Object.Game_Object):
     def get_build_item(self):
         if len(self.v_build_queue) < 1:
             return None
-        elif self.v_build_queue[0]['production_id'] == 0xFF:
+        elif self.v_build_queue[0]['production_id'] == Data_BUILDINGS.B_NONE:
             return None
-        elif self.v_build_queue[0]['production_id'] == 249:  # repeat
+        elif self.v_build_queue[0]['production_id'] == Data_BUILDINGS.B_REPEAT:
             return self.v_build_queue[1]
         else:
             return self.v_build_queue[0]
@@ -239,23 +191,17 @@ class Game_Colony(Game_Object.Game_Object):
                 self.i_population += 1
 # ------------------------------------------------------------------------------
     def total_population(self):
-        return len(self.d_colonists[K_FARMER]) + len(self.d_colonists[K_WORKER]) + len(self.d_colonists[K_SCIENTIST])
-# ------------------------------------------------------------------------------
-    def summary_result(self, summary):
-        res = 0.0
-        for k, v in summary.iterkeys():
-            res += float(v)
-        return res
+        #return len(self.d_colonists[K_FARMER]) + len(self.d_colonists[K_WORKER]) + len(self.d_colonists[K_SCIENTIST])
+        return self.i_population
 # ------------------------------------------------------------------------------
     def recount_outpost(self):
-#       print "this is outpost"
         self.i_population     = 0
         self.i_pollution      = 0
         self.i_industry       = 0
         self.i_research       = 0
-#       self.food_summary     = {}
-#       self.industry_summary = {}
-#       self.research_summary = {}
+        self.food_summary     = {}
+        self.industry_summary = {}
+        self.research_summary = {}
 
 # ------------------------------------------------------------------------------
     def recount(self, RULES, colony_leader, PLAYERS):
@@ -292,6 +238,41 @@ class Game_Colony(Game_Object.Game_Object):
 
         end_clock = time.clock()
         print "$$$ colony::recount() ... clock elapsed = %f" % (end_clock-start_clock)
+# ------------------------------------------------------------------------------
+    def print_info(self):
+        print "  owner_id: %i" % self.i_owner_id
+# ------------------------------------------------------------------------------
+    def display_summary(self, title, foot, summary):
+        v_summary = []
+        total = rules.count_summary_result(summary)
+        print("+----------------------------------------------------+")
+        print("+ %s +" % title.ljust(50))
+        print("+ ================================================== +")
+        for k in summary:
+            if summary[k]:
+                print("+ %s ... %s +" % (str(summary[k]).rjust(6), k.ljust(39)))
+                v_summary.append("%s   %s" % (str(summary[k]).rjust(6), k.ljust(39)))
+        print("+                                                    +")
+        print("+ % 6i ... %s +" % (total, foot.ljust(39)))
+        print("+----------------------------------------------------+")
+        v_summary.append(' ')
+        v_summary.append("% 6i ... %s" % (total, foot.ljust(39)))
+        return v_summary
+# ------------------------------------------------------------------------------
+    def print_morale_summary(self):
+        return self.display_summary("Morale Summary", "Total", self.morale_summary)
+# ------------------------------------------------------------------------------
+    def print_bc_summary(self):
+        return self.display_summary("BC Summary", "Total Income", self.bc_summary)
+# ------------------------------------------------------------------------------
+    def print_food_summary(self):
+        return self.display_summary("Food Summary", "Total Food Produced", self.food_summary)
+# ------------------------------------------------------------------------------
+    def print_industry_summary(self):
+        return self.display_summary("Industry Summary", "Total Industry Produced", self.industry_summary)
+# ------------------------------------------------------------------------------
+    def print_research_summary(self):
+        return self.display_summary("Research Summary", "Research Industry Produced", self.research_summary)
 # ------------------------------------------------------------------------------
     def debug_production(self, rules):
         print("    @ colony::debug_production()... colony_id = %i" % self.i_id)

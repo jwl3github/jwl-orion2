@@ -1,53 +1,16 @@
-B_CLONING_CENTER                = 10
-B_CORE_WASTE_DUMP               = 13
-B_GRAVITY_GENERATOR             = 25
+# JWL: These buildings are so specialized that direct checks for them are currently used...
+B_CLONING_CENTER    = 10
+B_GRAVITY_GENERATOR = 25
+B_REPEAT            = 249
+B_NONE              = 255
 
-"""
-B_NO_BUILDING                        =  0
-B_ALIEN_CONTROL_CENTER                =  1
-B_ARMOR_BARRACKS                =  2
-B_ARTEMIS_SYSTEM_NET                =  3
-B_ASTRO_UNIVERSITY                =  4
-B_AUTOLAB                        =  6
-B_AUTOMATED_FACTORY                =  7
-B_BATTLESTATION                        =  8
-B_CAPITOL                        =  9
-B_COLONY_BASE                        = 11
-B_DEEP_CORE_MINE                = 12
-B_DIMENSIONAL_PORTAL                = 14
-B_FOOD_REPLICATORS                = 16
-B_GAIA_TRANSFORMATION                = 17
-B_CURRENCY_EXCHANGE                = 18
-B_GALACTIC_CYBERNET                = 19
-B_HYDROPONIC_FARM                = 21
-B_BARRIER_SHIELD                = 23
-B_FLUX_SHIELD                        = 24
-B_MISSILE_BASE                        = 26
-B_GROUND_BATTERIES                = 27
-B_RADIATION_SHIELD                = 28
-B_SUPERCOMPUTER                        = 30
-B_PLEASURE_DOME                        = 31
-B_POLLUTION_PROCESSOR                = 32
-B_RESEARCH_LAB                        = 35
-B_ROBO_MINER_PLANT                = 36
-B_SOIL_ENRICHMENT                = 37
-B_SPACE_ACADEMY                        = 38
-B_STAR_BASE                        = 40
-B_STAR_FORTRESS                        = 41
-B_STELLAR_CONVERTER                = 42
-B_SUBTERRANEAN_FARMS                = 43
-B_TERRAFORMING                        = 44
-B_WARP_INTERDICTOR                = 45
-B_WEATHER_CONTROLLER                = 46
-B_FIGHTER_GARRISON                = 47
-B_ARTIFICIAL_PLANET                = 48
-"""
-
+# ------------------------------------------------------------------------------
 BUILDINGS = {
 
 # Missing Android Farmer, Worker, Scientist @ cost = 50
       0: {
         'name':                     '',
+        'tech':                     255,
       },
 
       1: {
@@ -112,7 +75,7 @@ BUILDINGS = {
         'tech':                     27,
         'cost':                     600,
         'maint':                    -3,
-        'replaces':                 (-1, 40),
+        'replaces':                 [40],
       },
 
       9: {
@@ -150,7 +113,7 @@ BUILDINGS = {
         'tech':                     50,
         'cost':                     200,
         'maint':                    -8,
-        'replaces':                 (5, 32),
+        'replaces':                 [5, 32],
         'industry_pollution_ratio': 0.0
       },
 
@@ -226,7 +189,7 @@ BUILDINGS = {
         'tech':                     129,
         'cost':                     420,
         'maint':                    -5,
-        'replaces':                 (-1, 28, 24),
+        'replaces':                 [28, 24],
       },
 
      24: {
@@ -234,7 +197,7 @@ BUILDINGS = {
         'tech':                     130,
         'cost':                     120,
         'maint':                    -3,
-        'replaces':                 (-1, 28)
+        'replaces':                 [28]
       },
 
      25: {
@@ -364,7 +327,7 @@ BUILDINGS = {
         'tech':                     169,
         'cost':                     1500,
         'maint':                    -4,
-        'replaces':                 (40, 8),
+        'replaces':                 [40, 8],
       },
 
      42: {
@@ -418,50 +381,62 @@ BUILDINGS = {
 
     90: {
         'name':                     "? BUILDING 90 ?",
+        'tech':                     255
       },
 
     96: {
         'name':                     "? BUILDING 96 ?",
+        'tech':                     255
       },
 
     105: {
         'name':                     "? BUILDING 105 ?",
+        'tech':                     255
       },
 
     106: {
         'name':                     "? BUILDING 106 ?",
+        'tech':                     255
       },
 
     107: {
         'name':                     "? BUILDING 107 ?",
+        'tech':                     255
       },
 
     108: {
         'name':                     "? BUILDING 108 ?",
+        'tech':                     255
       },
 
     112: {
         'name':                     "? BUILDING 112 ?",
+        'tech':                     255
       },
 
     116: {
         'name':                     "? BUILDING 116 ?",
+        'tech':                     255
       },
 
     117: {
         'name':                     "? BUILDING 117 ?",
+        'tech':                     255
       },
 
     123: {
         'name':                     "? BUILDING 123 ?",
+        'tech':                     255
       },
 
     124: {
         'name':                     "? BUILDING 124 ?",
+        'tech':                     255
       },
 
     128: {
         'name':                     "? BUILDING 128 ?",
+        'tech':                     255
       },
 
     141: {
@@ -488,42 +463,52 @@ BUILDINGS = {
 
     144: {
         'name':                     "ship design # 4",
+        'type':                     "proto"
       },
 
     145: {
         'name':                     "ship design # 3",
+        'type':                     "proto"
       },
 
     146: {
         'name':                     "? production_id 146 ?",
+        'tech':                     255
       },
 
     147: {
         'name':                     "ship design # 2",
+        'type':                     "proto"
       },
 
     148: {
         'name':                     "ship design # 1",
+        'type':                     "proto"
       },
 
     149: {
         'name':                     "? production_id 149 ?",
+        'tech':                     255
       },
 
     150: {
         'name':                     "ship design # 0",
+        'type':                     "proto"
       },
 
     151: {
         'name':                     "? production_id 151 ?",
+        'tech':                     255
       },
 
     152: {
         'name':                     "? production_id 152 ?",
+        'tech':                     255
       },
 
     153: {
         'name':                     "ship design # X",
+        'type':                     "proto"
       },
 
     214: {
@@ -536,6 +521,7 @@ BUILDINGS = {
 
     241: {
         'name':                     "? BUILDING 241 ?",
+        'tech':                     255
       },
 
     246: {
@@ -586,4 +572,4 @@ def regularize_building_keys():
         apply_building_key_default(building_id, 'industry_pollution_ratio', 1.0)
         apply_building_key_default(building_id, 'research_per_scientist',   0)
         apply_building_key_default(building_id, 'research_per_colony',      0)
-        #apply_building_key_default(building_id, 'replaces',                None)
+        apply_building_key_default(building_id, 'replaces',                 [])

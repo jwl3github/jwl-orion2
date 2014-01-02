@@ -70,35 +70,40 @@ class Gui_ColonyProductionScreen(Gui_Screen.Gui_Screen):
 
         self.blit(self.get_image('colony_build_screen', 'panel'), (0, 0))
 
-        available_production = colony.get_available_production()
+        #self.hack_production_list(254, available['building'], 0, True)   # Trade Goods first
+        #self.hack_production_list(253, available['building'], 1, True)   # Housing second
+        #self.hack_production_list(214, available['xship'],    0, False)  # Freighter Fleet
+        #self.hack_production_list(246, available['special'], -1, False)  # Colony Base
+        #self.hack_production_list(246, available['special'], -1, True)   # Spy
 
-        self.hack_production_list(254, available_production['building'], 0, True)   # Trade Goods first
-        self.hack_production_list(253, available_production['building'], 1, True)   # Housing second
-        self.hack_production_list(214, available_production['xship'],    0, False)  # Freighter Fleet
-        self.hack_production_list(246, available_production['special'], -1, False)  # Colony Base
-        self.hack_production_list(246, available_production['special'], -1, True)   # Spy
+	# limit listing to 25 items here, overflow causes crash on Solaris, Python 2.6.5, Pygame 1.8.1
+        v_left  = colony.d_available_production['trade'] + \
+                  colony.d_available_production['housing'] + \
+                  colony.d_available_production['building'][:25]
+        v_right = colony.d_available_production['special'] + \
+                  colony.d_available_production['xship']
 
         y = 20
-	# limit listing to 25 items here, overflow causes crash on Solaris, Python 2.6.5, Pygame 1.8.1
-        for production_id in available_production['building'][:25]:
-            production_name = RULES['buildings'][production_id]['name']
-            hover_id = "production:%i" % production_id
-            if colony.in_build_queue(production_id):
-                self.write_text(K_FONT3, K_PALETTE_LIGHT_TEXT, 13, y, production_name, 2)
-                self.add_trigger({'action': "delete_production", 'production_id': production_id, 'hover_id': hover_id, 'rect': pygame.Rect((13, y), (170, 12))})
+        for i_id in v_left:
+            s_name     = RULES['buildings'][i_id]['name']
+            s_hover_id = "production:%i" % i_id
+            if colony.in_build_queue(i_id):
+                print 'Build-in-q: ' + s_name
+                self.write_text(K_FONT3, K_PALETTE_LIGHT_TEXT, 13, y, s_name, 2)
+                self.add_trigger({'action': "delete_production", 'production_id': i_id, 'hover_id': s_hover_id, 'rect': pygame.Rect((13, y), (170, 12))})
             else:
-                self.write_text(K_FONT3, K_PALETTE_DARK_TEXT, 13, y, production_name, 2)
-                self.add_trigger({'action': "production", 'production_id': production_id, 'hover_id': hover_id, 'rect': pygame.Rect((13, y), (170, 12))})
+                print 'Build-not-in-q: ' + s_name
+                self.write_text(K_FONT3, K_PALETTE_DARK_TEXT, 13, y, s_name, 2)
+                self.add_trigger({'action': "production", 'production_id': i_id, 'hover_id': s_hover_id, 'rect': pygame.Rect((13, y), (170, 12))})
             y += 18
 
-        # special = Spy, Colony Base
-        # xships = Freighter Fleet, Colony Ship, Outpost Ship and Transport Ship
         y = 20
-        for production_id in (available_production['special'] + available_production['xship']):
-            production_name = RULES['buildings'][production_id]['name']
-            self.write_text(K_FONT5, K_PALETTE_LIGHT_TEXT, 485, y, production_name, 2)
-            hover_id = "production:%i" % production_id
-            self.add_trigger({'action': "production", 'production_id': production_id, 'hover_id': hover_id, 'rect': pygame.Rect((485, y), (143, 15))})
+        for i_id in v_right:
+            s_name     = RULES['buildings'][i_id]['name']
+            s_hover_id = "production:%i" % i_id
+            print 'Other: ' + s_name
+            self.write_text(K_FONT5, K_PALETTE_LIGHT_TEXT, 485, y, s_name, 2)
+            self.add_trigger({'action': "production", 'production_id': i_id, 'hover_id': s_hover_id, 'rect': pygame.Rect((485, y), (143, 15))})
             y += 19
 
         label = self.render(K_FONT4, K_PALETTE_LIGHT_TEXT, "Build List for %s" % colony.s_name, 2)
@@ -110,7 +115,7 @@ class Gui_ColonyProductionScreen(Gui_Screen.Gui_Screen):
         for build_item in build_queue:
             production_id = build_item['production_id']
             if production_id < 0xFF:
-                if RULES['buildings'][production_id].has_key('type') and RULES['buildings'][production_id]['type'] == "repeat":
+                if production_id == Data_BUILDINGS.B_REPEAT:
                     repeat = True
                     continue
 
@@ -132,7 +137,7 @@ class Gui_ColonyProductionScreen(Gui_Screen.Gui_Screen):
                 y += 20
             i += 1
 
-        return ######################## <<<<<<<<<<<<<<<<<<<<<<
+        return ######################## <<<<<<<<<<<<<<<<<<<<<<  TODO everything below
 
         yy = 0
         for i in range(5):

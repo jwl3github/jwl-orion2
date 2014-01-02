@@ -36,6 +36,7 @@ class Game_Player(Game_Object.Game_Object):
         self.i_research_cost        = 0
         self.i_research_turns_left  = 0
         self.v_explored_star_ids    = []
+        self.d_allowed_production   = {'building':[], 'special':[], 'xship':[], 'housing':[], 'trade':[]}
 # ------------------------------------------------------------------------------
     def construct(self, d_init_struct):
         self.s_emperor_name         = d_init_struct['emperor_name']
@@ -144,6 +145,24 @@ class Game_Player(Game_Object.Game_Object):
     def add_explored_star_id(self, i_star_id):
         if i_star_id and not self.knows_star_id(i_star_id):
             self.v_explored_star_ids.append(i_star_id)
+# ------------------------------------------------------------------------------
+    def determine_allowed_production(self, RULES):
+        d_allowed = {'building':{}, 'xship':{}, 'special':{}, 'housing':{}, 'trade':{}, 'proto':{}, 'capitol':{}, 'repeat':{}}
+
+        for i_building_id, d_building in RULES['buildings'].items():
+            if (d_building['tech'] == 0) or (d_building['tech'] in self.v_known_techs):
+                print 'Player allowed: <%s> <%s> <%d>' % (d_building['type'], d_building['name'], i_building_id)
+                d_allowed[d_building['type']][d_building['name']] = i_building_id
+
+        # Create the allowed production table, initially indexed by production
+        # type, which yields a list of building id's that are pre-sorted
+        # alphabetically by name (to support the display list of available
+        # buildings).
+        self.d_allowed_production = {}
+        for s_type, d_table in d_allowed.items():
+            self.d_allowed_production[s_type] = []
+            for s_name in sorted(d_table.keys()):
+                self.d_allowed_production[s_type].append(d_table[s_name])
 # ------------------------------------------------------------------------------
     def print_debug(self):
         print
