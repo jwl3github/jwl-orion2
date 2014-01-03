@@ -73,9 +73,8 @@ class Gui_ColoniesScreen(Gui_Screen.Gui_Screen):
 
             build_item = colony.get_build_item()
             if build_item:
-                production_id   = build_item['production_id']
-                production_name = RULES['buildings'][production_id]['name']
-                production_cost = RULES['buildings'][production_id]['cost']
+                production_name = RULES['buildings'][build_item]['name']
+                production_cost = RULES['buildings'][build_item]['cost']
                 turns           = (production_cost - industry_progress) / industry
                 turns           = 1 if turns < 1 else int(turns + 0.99)
                 turns           = 9999 if turns > 9999 else turns

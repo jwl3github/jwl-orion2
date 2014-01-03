@@ -37,6 +37,14 @@ class Network_Client(object):
         self.send("GET_NAME")
         return self.recv()
 
+    def fetch_colony_prod_summary(self, i_colony_id):
+        o_colony = self.game_data['colonies'][i_colony_id]
+        if self.player_id == o_colony.i_owner_id:
+            self.send("FETCH_COLONY_PROD_SUMMARY", {'colony_id': i_colony_id})
+            update_data = self.recv()
+            if update_data:
+                o_colony.unserialize(update_data)
+
     def fetch_colony_data(self):
         ok = True
         for i_colony_id, o_colony in self.game_data['colonies'].items():
@@ -45,6 +53,7 @@ class Network_Client(object):
                 update_data = self.recv()
                 if update_data:
                     o_colony.unserialize(update_data)
+                    #print o_colony.serialize()
                 else:
                     print("! ERROR: Network_Client::fetch_colony_data() ... no data???")
                     ok = False
@@ -154,9 +163,7 @@ class Network_Client(object):
         return response == 'NEXT_TURN_ACK'
 
     def set_research(self, i_tech_id):
-#print("Network_Client::set_research() ... tech_id = %i" % i_tech_id)
         self.send("SET_RESEARCH", {'tech_id': i_tech_id})
-        #JWL# return self.fetch_game_data()
         return self.fetch_update_data()
 
     def get_server_status(self):

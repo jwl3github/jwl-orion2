@@ -169,11 +169,9 @@ class Game_Main(object):
         for i_player_id, o_player in self.d_players.items():
             o_player.determine_allowed_production(self.d_rules)
 
-        for colony_id, colony in self.d_colonies.items():
-            print("Game_Main::recount_colonies() ... colony_id = %i" % colony_id)
-            if colony.exists():
-                governor = self.get_governor(colony_id)
-                colony.recount(self.d_rules, governor, self.d_players)
+        for i_colony_id, o_colony in self.d_colonies.items():
+            if o_colony.exists():
+                o_colony.recount(self.d_rules, self.get_governor(i_colony_id), self.d_players)
 # ------------------------------------------------------------------------------
     def colony_owned_by(self, i_colony_id, i_player_id):
         """ Returns True if the given i_colony_id belongs to the indicated player. """
@@ -281,13 +279,6 @@ class Game_Main(object):
             o_player = self.d_players[i_player_id]
             if o_player.alive():
                 self.update_research(i_player_id, o_player.i_research_tech_id)
-# ------------------------------------------------------------------------------
-    def raise_population(self):
-        v_player_recount = []
-        for i_colony_id, o_colony in self.d_colonies.items():
-            if o_colony.raise_population(self.d_players):
-                governor = self.get_governor(colony_id)
-                colony.recount(self.d_rules, governor, self.d_players)
 # ------------------------------------------------------------------------------
     def get_stars_for_player(self, i_player_id):
         """ Returns a dictionary of all stars in galaxy.
@@ -398,32 +389,48 @@ class Game_Main(object):
 
         """
         print("@ Game_Main::colonies_production()")
-        for colony_id, colony in self.d_colonies.items():
-            #colony.debug_production(self.d_rules)
-            #print(colony.v_building_ids)
-            build_item  = colony.get_build_item()
-            industry    = colony.i_industry
-            build_total = colony.update_industry_progress()
+        for i_colony_id, o_colony in self.d_colonies.items():
+            b_remove    = False
+            b_recount   = False
+            build_item  = o_colony.get_build_item()
+            build_total = o_colony.update_industry_progress()
             if build_item:
-                production_id = build_item['production_id']
-                build_rule    = self.d_rules['buildings'][production_id]
-                build_cost    = build_rule['cost']
-                build_type    = build_rule['type'] if build_rule.has_key('type') else 'building'
-                print 'build_item (industry %d [total: %d]) ==>' % (colony.i_industry, build_total)
-                print build_item
-                if build_type != 'building':
-                    # handling for specials/housing/trade
-                    print 'Cannot handling "typed" buildings yet.'
-                elif build_total > build_cost:  # All others assumed to be normal buildings
-                    print 'Building completed.  Adding to colony and resetting colony industry_progress.'
-                    colony.add_building(production_id)
+                build_rule = self.d_rules['buildings'][build_item]
+                build_cost = build_rule['cost']
+                build_type = build_rule['type']
+                print 'build_item (industry %d [total: %d]) ==> item %d' % (o_colony.i_industry, build_total, build_item)
+                if build_total > build_cost:
+                    if build_type == 'special':
+                        if build_rule['name'] == 'Spy':   # JWL: TODO maybe separate special into spy/base?
+                            self.d_players[o_colony.i_owner_id].i_spy_count += 1
+                            b_remove = True
+                        elif build_rule['name'] == 'Colony Base':
+                            pass  # TODO
+                            b_remove = True
+                    elif build_type == 'trade':
+                        pass  # TODO Confirm after BC calc finished ... No action - already used for BC calculation.
+                    elif build_type == 'housing':
+                        pass  # TODO Need to stop housing if colony fills.
+                    elif build_type == 'xship':
+                        # Transport, Outpost, Colony, Freighter
+                        pass  # TODO
+                        b_remove, b_recount = True, True # Might reduce Marine or Colonist count
+                    elif build_type != 'building':   # 'capitol', 'proto', 'repeat'
+                        print 'Ignoring invalid non-building present in queue. <%s> colony <%i>' % (build_type, i_colony_id)
+                    else:
+                        print 'Building completed.  Adding to colony and resetting colony industry_progress.'
+                        o_colony.add_building(build_item)
+                        print o_colony.v_building_ids
+                        b_remove, b_recount = True, True
+
+                    if b_remove:
 # TODO JWL handle repeat -- don't remove if repeat still possible (note terraforming can repeat sometimes, but it runs out)
-                    colony.remove_build_item(production_id)
-                    colony.reset_industry_progress()
-                #colony.debug_production(self.d_rules)
-                #print(colony.v_building_ids)
+                        o_colony.remove_build_item(build_item)
+                        o_colony.reset_industry_progress()
+                    if b_recount:
+                        o_colony.recount(self.d_rules, self.get_governor(i_colony_id), self.d_players)
             else:
-                print 'No build_item (industry %d [total: %d]) ==>' % (colony.i_industry, build_total)
+                print 'No build_item (industry %d [total: %d]) ==> None' % (o_colony.i_industry, build_total)
 # ------------------------------------------------------------------------------
     def recount(self):
         self.recount_heroes()
@@ -443,17 +450,14 @@ class Game_Main(object):
         self.move_ships()
         sc = debug_timing(sc, 'game.move_ships')
 
-        self.colonies_production()
-        sc = debug_timing(sc, 'game.colonies_production')
-
         for i_player_id in range(K_MAX_PLAYERS):
             if self.d_players[i_player_id].alive():
                 self.update_player_research(self.d_players[i_player_id])
                 self.d_players[i_player_id].raise_bc()
         sc = debug_timing(sc, 'game.[player research/bc]')
 
-        self.raise_population()
-        sc = debug_timing(sc, 'game.raise_population')
+        self.colonies_production()
+        sc = debug_timing(sc, 'game.colonies_production')
 
         # Except in early game, some colony somewhere is likely to change its
         # population count each turn.  For simplicity, recount all players again.

@@ -139,9 +139,13 @@ def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
     i_num_colonists       = colony.total_population()
     b_has_gravity_gen     = colony.has_building(Data_BUILDINGS.B_GRAVITY_GENERATOR)
 
+    print 'hi colony'
+    print colony.v_building_ids
     for b_id in colony.v_building_ids:
         d_building = RULES['buildings'][b_id]
         morale_bonus_gov          += d_building['morale_bonus_gov'][i_owner_goverment]
+        print d_building
+        print morale_bonus_gov
         morale_bonus_building     += d_building['morale_bonus']
         food_per_farmer           += d_building['food_per_farmer']
         food_per_colony           += d_building['food_per_colony']
@@ -176,12 +180,12 @@ def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
     morale_total = 100.0 + morale_base + morale_bonus_gov + morale_bonus_building + \
                    morale_bonus_tech + morale_bonus_hero
 
-    #print("morale_base              = %s" % morale_base)
-    #print("morale_bonus_gov         = %s" % morale_bonus_gov)
-    #print("morale_bonus_hero        = %s" % morale_bonus_hero)
-    #print("morale_bonus_building    = %s" % morale_bonus_building)
-    #print("morale_bonus_tech        = %s" % morale_bonus_tech)
-    #print("morale_total             = %s" % morale_total)
+    print("morale_base              = %s" % morale_base)
+    print("morale_bonus_gov         = %s" % morale_bonus_gov)
+    print("morale_bonus_hero        = %s" % morale_bonus_hero)
+    print("morale_bonus_building    = %s" % morale_bonus_building)
+    print("morale_bonus_tech        = %s" % morale_bonus_tech)
+    print("morale_total             = %s" % morale_total)
 
     # ---------------------------------------------------------------------------
     # Finish FOOD computation
@@ -229,14 +233,14 @@ def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
     industry_total    -= industry_pollution
     industry_total     = int(industry_total + 0.5)
 
-    print("industry_pollution           = %s" % industry_pollution)
-    print("industry_gravity             = %s" % industry_gravity)
-    print("industry_base                = %s" % industry_base)
-    print("industry_per_worker          = %s" % industry_per_worker)
-    print("industry_per_colony          = %s" % industry_per_colony)
-    print("industry_bonus_gov           = %s" % industry_bonus_gov)
-    print("industry_bonus_hero          = %s" % industry_bonus_hero)
-    print("industry_total               = %s" % industry_total)
+    #print("industry_pollution           = %s" % industry_pollution)
+    #print("industry_gravity             = %s" % industry_gravity)
+    #print("industry_base                = %s" % industry_base)
+    #print("industry_per_worker          = %s" % industry_per_worker)
+    #print("industry_per_colony          = %s" % industry_per_colony)
+    #print("industry_bonus_gov           = %s" % industry_bonus_gov)
+    #print("industry_bonus_hero          = %s" % industry_bonus_hero)
+    #print("industry_total               = %s" % industry_total)
 
     # ---------------------------------------------------------------------------
     # Finish RESEARCH computation
@@ -355,8 +359,8 @@ def compose_bc_summaryxxx(RULES, colony, PLAYERS):
         summary['spaceport'] = int(summary['taxes_collected'] / 2)
 
     # TODO: Trade Goods ... round the 50% of industry
-    build_queue = colony.get_build_queue()
-    if (len(build_queue) > 0) and (build_queue[0]['production_id'] == BUILD_TRADE_GOODS):
+    build_item = colony.get_build_item()
+    if (not build_item or build_item == BUILD_TRADE_GOODS):
         summary['trade_goods'] = int(colony.i_industry / 2)
 
     return summary
@@ -432,11 +436,10 @@ def compose_pop_growth(RULES, colony, colony_leader, PLAYERS):
             l = get_hero_bonus(colony_leader, 'pop_growth')  # l == Leader Bonus
             h = 0               # h == Housing; TODO Compute Housing bonus
             s = 0               # s == Starvation; TODO Compute Starvation bonus (50k pop per missing food)
+            c = 0               # c == Cloning Center
 
             if colony.has_building(Data_BUILDINGS.B_CLONING_CENTER):
                 c = 100 * i_race_pop / i_total_pop
-            else:
-                c = 0
 
             a = 1 + g + t + r + l + h
 
@@ -444,17 +447,10 @@ def compose_pop_growth(RULES, colony, colony_leader, PLAYERS):
 
     return v_pop_growth
 # ------------------------------------------------------------------------------
-def count_summary_result(summary):
-    sum = 0.0
-    for k in summary:
-        sum += float(summary[k])
-    return round(sum)
-# ------------------------------------------------------------------------------
 def research_costs(research_areas, area, rp):
-    if not area:
-        return -1
-    else:
+    if area:
         return research_areas[area]['cost']
+    return -1
 # ------------------------------------------------------------------------------
 def research_turns(cost, progress, rp):
     if rp > 0:

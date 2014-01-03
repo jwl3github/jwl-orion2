@@ -19,6 +19,9 @@ class Gui_ColonyProductionScreen(Gui_Screen.Gui_Screen):
     def open_colony(self, colony_id):
         self.i_colony_id = colony_id
         self.o_colony    = self.get_colony(colony_id)
+        print 'first'
+        print colony_id
+        print self.o_colony.serialize()
         self.i_planet_id = self.o_colony.i_planet_id
         self.o_planet    = self.get_planet(self.i_planet_id)
         self.i_star_id	 = self.o_planet.i_star_id
@@ -78,6 +81,7 @@ class Gui_ColonyProductionScreen(Gui_Screen.Gui_Screen):
         #self.hack_production_list(246, available['special'], -1, True)   # Spy
 
 	# limit listing to 25 items here, overflow causes crash on Solaris, Python 2.6.5, Pygame 1.8.1
+        print colony.serialize()
         v_left  = colony.d_available_production['trade'] + \
                   colony.d_available_production['housing'] + \
                   colony.d_available_production['building'][:25]
@@ -113,14 +117,13 @@ class Gui_ColonyProductionScreen(Gui_Screen.Gui_Screen):
         y = 334
         i = 0
         repeat = False
-        for build_item in build_queue:
-            production_id = build_item['production_id']
-            if production_id < 0xFF:
-                if production_id == Data_BUILDINGS.B_REPEAT:
+        for i_building_id in build_queue:
+            if i_building_id < 0xFF:
+                if i_building_id == Data_BUILDINGS.B_REPEAT:
                     repeat = True
                     continue
 
-                production_name = RULES['buildings'][production_id]['name']
+                production_name = RULES['buildings'][i_building_id]['name']
                 label = self.render(K_FONT4, K_PALETTE_LIGHT_TEXT, production_name, 2)
                 xx = (250 - label.get_width()) / 2
                 self.blit(label, (208 + xx, y))
@@ -134,7 +137,7 @@ class Gui_ColonyProductionScreen(Gui_Screen.Gui_Screen):
                     self.add_trigger({'action': "delete_repeat_production", 'item': i, 'hover_id': hover_id, 'rect': pygame.Rect((208, y - 1), (250, 15))})
                     repeat = False
                 else:
-                    self.add_trigger({'action': "delete_production", 'production_id': production_id, 'item': i, 'hover_id': hover_id, 'rect': pygame.Rect((208, y - 1), (250, 15))})
+                    self.add_trigger({'action': "delete_production", 'production_id': i_building_id, 'item': i, 'hover_id': hover_id, 'rect': pygame.Rect((208, y - 1), (250, 15))})
                 y += 20
             i += 1
 

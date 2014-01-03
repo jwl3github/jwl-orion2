@@ -32,7 +32,7 @@ class Game_Colony(Game_Object.Game_Object):
         self.i_morale                   = 0
         self.i_pollution                = 0
         self.i_population               = 0
-        #self.i_assignment               = 0
+        self.i_assignment               = 0
         self.v_pop_raised               = []
         self.v_pop_grow                 = []
         #self.i_num_turns_existed        = 0
@@ -61,7 +61,7 @@ class Game_Colony(Game_Object.Game_Object):
         self.i_morale                   = d_init_struct['morale']
         self.i_pollution                = d_init_struct['pollution']
         self.i_population               = d_init_struct['population']
-        #self.i_assignment               = d_init_struct['assignment']
+        self.i_assignment               = d_init_struct['assignment']
         self.v_pop_raised               = d_init_struct['pop_raised']
         self.v_pop_grow                 = d_init_struct['pop_grow']
         #self.i_num_turns_existed        = d_init_struct['num_turns_existed']
@@ -90,8 +90,8 @@ class Game_Colony(Game_Object.Game_Object):
                 if o_colonist.race != self.i_owner_id:
                     self.b_mixed_race = True
 # ------------------------------------------------------------------------------
-    def has_building(self, b_id):
-        return b_id in self.v_building_ids
+    def has_building(self, building_id):
+        return building_id in self.v_building_ids
 # ------------------------------------------------------------------------------
     def add_building(self, building_id):
         if not self.has_building(building_id):
@@ -140,32 +140,32 @@ class Game_Colony(Game_Object.Game_Object):
     def get_build_queue_ids(self):
         return self.v_build_queue
 # ------------------------------------------------------------------------------
-    def add_build_item(self, production_id, flags = 0):
+    def add_build_item(self, i_building_id, flags = 0):
         if len(self.v_build_queue) < 7:
-           self.v_build_queue.append(production_id)
+           self.v_build_queue.append(i_building_id)
 # ------------------------------------------------------------------------------
-    def remove_build_item(self, production_id):
+    def remove_build_item(self, i_building_id):
         try:
-            i_index = self.v_build_queue.index(production_id)
+            i_index = self.v_build_queue.index(i_building_id)
             self.v_build_queue.pop(i_index)
         except:
-            print 'ERROR: remove_build_item <%d> - no such item' % production_id
+            print 'ERROR: remove_build_item <%d> - no such item' % i_building_id
 # ------------------------------------------------------------------------------
     def get_build_item(self):
         if len(self.v_build_queue) < 1:
             return None
-        elif self.v_build_queue[0]['production_id'] == Data_BUILDINGS.B_NONE:
+        elif self.v_build_queue[0] == Data_BUILDINGS.B_NONE:
             return None
-        elif self.v_build_queue[0]['production_id'] == Data_BUILDINGS.B_REPEAT:
+        elif self.v_build_queue[0] == Data_BUILDINGS.B_REPEAT:
             return self.v_build_queue[1]
         else:
             return self.v_build_queue[0]
 # ------------------------------------------------------------------------------
-    def in_build_queue(self, production_id):
-        return production_id in self.v_build_queue
+    def in_build_queue(self, i_building_id):
+        return i_building_id in self.v_build_queue
 # ------------------------------------------------------------------------------
     def get_aggregated_populations(self):
-        pops    = [0, 0, 0, 0, 0, 0, 0, 0]
+        pops = [0, 0, 0, 0, 0, 0, 0, 0]
         for t in [K_FARMER, K_WORKER, K_SCIENTIST]:
             for colonist in self.d_colonists[t]:
                 pops[colonist.race] += 1
@@ -272,12 +272,29 @@ class Game_Colony(Game_Object.Game_Object):
         # Large/complex data types that rarely change and should be tracked
         # via a 'dirty_XXX' flag.
         s_rare =   '\nself.v_build_queue          = ' + str(self.v_build_queue)          +  \
-                   '\nself.v_building_ids         = ' + str(self.v_building_ids)
-                   #'\nself.d_colonists            = ' + str(self.d_colonists)            +  \
-                   #'\nself.d_available_production = ' + str(self.d_available_production) +  \
-                   #'\nself.d_prod_summary         = ' + str(self.d_prod_summary)
+                   '\nself.v_building_ids         = ' + str(self.v_building_ids)         +  \
+                   self.serialize_available_production()
+                   #self.serialize_colonists()
         s_serial = s_fixed + s_often + s_rare
         print s_serial
+        return s_serial
+# ------------------------------------------------------------------------------
+    def serialize_available_production(self):
+        s_serial = ''
+        for k,v in self.d_available_production.items():
+            s_serial += '\nself.d_available_production["' + k + '"] = ' + str(v)
+        return s_serial
+# ------------------------------------------------------------------------------
+    def serialize_colonists(self):
+        s_serial = ''
+        #for k,v in self.d_prod_summary.items():
+        #    s_serial += '\nself.d_colonists["' + k + '"] = ' + str(v)
+        return s_serial
+# ------------------------------------------------------------------------------
+    def serialize_prod_summary(self):
+        s_serial = ''
+        for k,v in self.d_prod_summary.items():
+            s_serial += '\nself.d_prod_summary["' + k + '"] = ' + str(v)
         return s_serial
 # ------------------------------------------------------------------------------
     def unserialize(self, s_serial):
@@ -321,15 +338,11 @@ class Game_Colony(Game_Object.Game_Object):
         return self.display_summary('research')
 # ------------------------------------------------------------------------------
     def debug_production(self, rules):
-        print("    @ colony::debug_production()... colony_id = %i" % self.i_id)
         print("    @ colony::debug_production()... colony_id = %i" % self.i_colony_id)
-        for build_item in self.v_build_queue:
-            production_id = build_item['production_id']
-            if rules['buildings'][production_id].has_key('type'):
-                type = rules['buildings'][production_id]['type']
-            else:
-                type = "building"
-            print("        production_id: %3i ... flags: %3i ... type: %10s ... %s" % (production_id, build_item['flags'], type, rules['buildings'][production_id]['name']))
+        for i_building_id in self.v_build_queue:
+            s_type = rules['buildings'][i_building_id]['type']
+            s_name = rules['buildings'][i_building_id]['name']
+            print("        i_building_id: %3i ... type: %10s ... %s" % (i_building_id, s_type, s_name))
         print
 # ==============================================================================
 class Game_EnemyColony(Game_Colony):

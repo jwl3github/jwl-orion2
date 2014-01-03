@@ -97,7 +97,7 @@ class Network_Server(object):
 # ------------------------------------------------------------------------------
     def check_next_turn(self):
         # check_next_turn_multiplayer seems to work fine
-        # but for now every game is supposed to be a single player
+        # but for now every game is sFETCH_COLONY_PROD_SUMMARYupposed to be a single player
         return self.check_next_turn_singleplayer()
 # ------------------------------------------------------------------------------
     def check_next_turn_singleplayer(self):
@@ -121,6 +121,22 @@ class Network_Server(object):
         # all players must confirm next turn
         return len(pl_st) == self.o_game.count_players()
 # ------------------------------------------------------------------------------
+    def get_colony_info(self, i_colony_id, i_player_id, s_what_info):
+        data = ''
+        if self.o_game.d_colonies.has_key(i_colony_id):
+            # JWL: TODO Actually, any visible colony should be allowed (with some data hiding, not just player's colonies)
+            o_colony = self.o_game.d_colonies[i_colony_id]
+            if o_colony.i_owner_id == i_player_id:
+                if s_what_info == 'prod_summary':
+                    data = o_colony.serialize_prod_summary()
+                else:
+                    data = o_colony.serialize()
+            else:
+                self.log_info('FETCH_COLONY_DATA <%d> - Colony not visible to requesting player.' % i_colony_id)
+        else:
+            self.log_info('FETCH_COLONY_DATA <%d> - Colony id not valid.' % i_colony_id)
+        return data
+# ------------------------------------------------------------------------------
     def handle_recv_client_data(self, player_id, client_socket, thread_id, data):
         self.log_info("data received from client # %s, player_id = %i" % (thread_id, player_id))
 
@@ -130,7 +146,7 @@ class Network_Server(object):
         self.log_info("thread_id: %s\n    player_id: %i\n    ACTION: %s\n    PARAMS: %s\n" % (thread_id, player_id, ACTION, str(PARAMS)))
 
         if ACTION == "LOGIN":
-            # SECURE ME!!!
+            # TODO SECURE ME!!!
             player_id = int(PARAMS['player_id'])
             self.log_info("thread \"%s\" ... player_id set to %i" % (thread_id, player_id))
 
@@ -139,13 +155,28 @@ class Network_Server(object):
             return -1
 
         elif ACTION == "PING":
-            self.send_data_to_game_client(client_socket,  thread_id, "PONG")
+            self.send_data_to_game_client(client_socket, thread_id, "PONG")
 
         elif ACTION == "GET_NAME":
-            self.send_data_to_game_client(client_socket,  thread_id, self.s_name)
+            self.send_data_to_game_client(client_socket, thread_id, self.s_name)
 
         elif ACTION == "GET_SERVER_STATUS":
             self.send_data_to_game_client(client_socket, thread_id, self.s_status)
+
+        elif player_id < 0:
+            self.log_error("anonymous player sending actions!!!")
+
+        elif ACTION == "FETCH_UPDATE_DATA":
+            data = self.get_update_for_player(player_id)
+            self.send_data_to_game_client(client_socket, thread_id, data)
+
+        elif ACTION == "FETCH_COLONY_DATA":
+            data = self.get_colony_info(PARAMS['colony_id'], player_id, 'data')
+            self.send_data_to_game_client(client_socket, thread_id, data)
+
+        elif ACTION == "FETCH_COLONY_PROD_SUMMARY":
+            data = self.get_colony_info(PARAMS['colony_id'], player_id, 'prod_summary')
+            self.send_data_to_game_client(client_socket, thread_id, data)
 
         elif ACTION == "NEXT_TURN":
             self.log_info("received NEXT_TURN from thread %s ... player_id = %i" % (thread_id, player_id))
@@ -154,27 +185,6 @@ class Network_Server(object):
                 time.sleep(0.001)
             self.log_info("... NEXT_TURN performed, now sending NEXT_TURN_ACK")
             self.send_data_to_game_client(client_socket, thread_id, "NEXT_TURN_ACK")
-
-        elif player_id < 0:
-            self.log_error("anonymous player sending actions!!!")
-
-        elif ACTION == "FETCH_COLONY_DATA":
-            data = ''
-            i_colony_id = PARAMS['colony_id']
-            if self.o_game.d_colonies.has_key(i_colony_id):
-                # JWL: TODO Actually, any visible colony should be allowed (with some data hiding, not just player's colonies)
-                o_colony = self.o_game.d_colonies[i_colony_id]
-                if o_colony.i_owner_id == player_id:
-                    data = o_colony.serialize()
-                else:
-                    self.log_info('FETCH_COLONY_DATA <%d> - Colony not visible to requesting player.' % i_colony_id)
-            else:
-                self.log_info('FETCH_COLONY_DATA <%d> - Colony id not valid.' % i_colony_id)
-            self.send_data_to_game_client(client_socket, thread_id, data)
-
-        elif ACTION == "FETCH_UPDATE_DATA":
-            data = self.get_update_for_player(player_id)
-            self.send_data_to_game_client(client_socket, thread_id, data)
 
         elif ACTION == "FETCH_GAME_DATA":
             # JWL: Trying to separate one-time-only bulk data from dynamic updates

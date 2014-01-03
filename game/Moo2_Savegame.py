@@ -438,7 +438,8 @@ class Moo2_Savegame(object):
                 i_production_id    = struct.unpack_from('B', self.file_data, 0x115 + i_queue_id*2)[0]
                 i_production_flags = struct.unpack_from('B', self.file_data, 0x115 + i_queue_id*2 + 1)[0]
                 if i_production_id < 0xFF:
-                    o_colony['build_queue'].append({'production_id': i_production_id, 'flags': i_production_flags})
+                    o_colony['build_queue'].append(i_production_id)
+                    # JWL: TODO What do 'flags' mean?  Ignored for now...
 
             for i_building_id in range(1, 49):
                 i_building_state = struct.unpack_from('B', self.file_data, 0x136 + i_building_id)[0]

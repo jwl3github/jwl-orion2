@@ -25,7 +25,7 @@ BUILDINGS = {
         'tech':                     14,
         'cost':                     150,
         'maint':                    -2,
-        'morale_gov_bonus':         [20, 20, 20, 20, 0, 0, 0], # percent
+        'morale_bonus_gov':         [20, 20, 20, 20, 0, 0, 0], # percent
       },
 
       3: {
@@ -181,7 +181,7 @@ BUILDINGS = {
         'tech':                     103,
         'cost':                     60,
         'maint':                    -1,
-        'morale_gov_bonus':         [20, 20, 20, 20, 0, 0, 0], # percent
+        'morale_bonus_gov':         [20, 20, 20, 20, 0, 0, 0], # percent
       },
 
      23: {

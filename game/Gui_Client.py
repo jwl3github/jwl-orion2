@@ -539,6 +539,13 @@ class Gui_Client(object):
                     if not me.i_research_tech_id:
                         trigger = {'action': "screen", 'screen': "research", 'rect': None}
                         self.process_screen_trigger(trigger, scr)
+                    v_colonies = Network_Client.Client.list_colonies()
+                    for i_colony_id, o_colony in v_colonies.items():
+                        print i_colony_id
+                        print o_colony.get_build_item()
+                        if (o_colony.i_owner_id == me.i_player_id) and (not o_colony.get_build_item()):
+                            trigger = {'action': "screen", 'screen': "colony_production", 'colony_id': i_colony_id, 'rect': None}
+                            self.process_screen_trigger(trigger, scr)
 
                 if trigger['action'] == "ESCAPE":
                     # processed later - can be chained...

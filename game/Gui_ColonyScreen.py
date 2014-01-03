@@ -1,6 +1,7 @@
 import pygame
 import Gui_Screen
 import Gui_TextBox
+import Network_Client
 import Data_CONST
 from Data_CONST import *
 
@@ -150,10 +151,8 @@ class Gui_ColonyScreen(Gui_Screen.Gui_Screen):
 
         i_colony_id = self.i_colony_id
         o_colony    = self.get_colony(i_colony_id)
-        i_planet_id = o_colony.i_planet_id
-        o_planet    = self.get_planet(i_planet_id)
-        i_star_id   = o_planet.i_star_id
-        o_star      = self.get_star(i_star_id)
+
+        Network_Client.Client.fetch_colony_prod_summary(i_colony_id)
 
         if o_trigger['action'] == "summary":
             s_summary = o_trigger['summary']

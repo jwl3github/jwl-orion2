@@ -33,6 +33,9 @@ class Game_Player(Game_Object.Game_Object):
         # Derived
         self.i_used_command         = 0
         self.v_research_areas       = None
+        self.i_spy_count            = 0
+        # TODO JWL - Notional spy management
+        self.i_spy_missions         = {'steal_tech':[], 'sabotage':[]}
         self.i_research_cost        = 0
         self.i_research_turns_left  = 0
         self.v_explored_star_ids    = []
