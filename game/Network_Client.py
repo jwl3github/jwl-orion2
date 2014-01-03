@@ -37,6 +37,21 @@ class Network_Client(object):
         self.send("GET_NAME")
         return self.recv()
 
+    def fetch_colony_data(self):
+        ok = True
+        for i_colony_id, o_colony in self.game_data['colonies'].items():
+            if o_colony.i_owner_id == self.player_id:
+                self.send("FETCH_COLONY_DATA", {'colony_id': o_colony.i_colony_id})
+                update_data = self.recv()
+                if update_data:
+                    o_colony.unserialize(update_data)
+                else:
+                    print("! ERROR: Network_Client::fetch_colony_data() ... no data???")
+                    ok = False
+        print ("fetch_colony_data DONE.")
+        return ok
+
+
     def fetch_update_data(self):
         self.send("FETCH_UPDATE_DATA")
         update_data = self.recv()
@@ -46,11 +61,10 @@ class Network_Client(object):
         player = self.game_data['players'][self.player_id]
         player.unserialize(update_data)
         print ("fetch_update_data DONE.")
-        #player.print_debug()
+        self.fetch_colony_data()
         return True
 
     def fetch_game_data(self):
-        #time.sleep(0.01)   # Time in seconds; can be floating point.
         self.send("FETCH_GAME_DATA")
         self.game_data = self.recv()
         if not self.game_data:

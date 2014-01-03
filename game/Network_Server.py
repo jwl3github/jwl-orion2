@@ -132,7 +132,7 @@ class Network_Server(object):
         if ACTION == "LOGIN":
             # SECURE ME!!!
             player_id = int(PARAMS['player_id'])
-            self.log_info("thread \"%s\" ... player_id set to %i" % (thread_id, player_id ))
+            self.log_info("thread \"%s\" ... player_id set to %i" % (thread_id, player_id))
 
         elif ACTION == "LOGOUT":
             self.set_shutdown()
@@ -153,21 +153,35 @@ class Network_Server(object):
             while self.get_next_turn(thread_id) != -1:
                 time.sleep(0.001)
             self.log_info("... NEXT_TURN performed, now sending NEXT_TURN_ACK")
-            self.send_data_to_game_client(client_socket,  thread_id, "NEXT_TURN_ACK")
+            self.send_data_to_game_client(client_socket, thread_id, "NEXT_TURN_ACK")
 
         elif player_id < 0:
             self.log_error("anonymous player sending actions!!!")
 
+        elif ACTION == "FETCH_COLONY_DATA":
+            data = ''
+            i_colony_id = PARAMS['colony_id']
+            if self.o_game.d_colonies.has_key(i_colony_id):
+                # JWL: TODO Actually, any visible colony should be allowed (with some data hiding, not just player's colonies)
+                o_colony = self.o_game.d_colonies[i_colony_id]
+                if o_colony.i_owner_id == player_id:
+                    data = o_colony.serialize()
+                else:
+                    self.log_info('FETCH_COLONY_DATA <%d> - Colony not visible to requesting player.' % i_colony_id)
+            else:
+                self.log_info('FETCH_COLONY_DATA <%d> - Colony id not valid.' % i_colony_id)
+            self.send_data_to_game_client(client_socket, thread_id, data)
+
         elif ACTION == "FETCH_UPDATE_DATA":
+            data = self.get_update_for_player(player_id)
+            self.send_data_to_game_client(client_socket, thread_id, data)
+
+        elif ACTION == "FETCH_GAME_DATA":
             # JWL: Trying to separate one-time-only bulk data from dynamic updates
             # includes: 1. Database of building names/costs
             # includes: 2. Database of research names/costs
             # includes: 3. Database of hero names/attribs
             # includes: 4. Star chart with coords/colors/(names? - beware sharing Orion, unless bait-n-switch concept employed)
-            data = self.get_update_for_player(player_id)
-            self.send_data_to_game_client(client_socket, thread_id, data)
-
-        elif ACTION == "FETCH_GAME_DATA":
             data = self.get_data_for_player(player_id)
             self.send_data_to_game_client(client_socket, thread_id, data)
 

@@ -229,14 +229,14 @@ def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):
     industry_total    -= industry_pollution
     industry_total     = int(industry_total + 0.5)
 
-    #print("industry_pollution           = %s" % industry_pollution)
-    #print("industry_gravity             = %s" % industry_gravity)
-    #print("industry_base                = %s" % industry_base)
-    #print("industry_per_worker          = %s" % industry_per_worker)
-    #print("industry_per_colony          = %s" % industry_per_colony)
-    #print("industry_bonus_gov           = %s" % industry_bonus_gov)
-    #print("industry_bonus_hero          = %s" % industry_bonus_hero)
-    #print("industry_total               = %s" % industry_total)
+    print("industry_pollution           = %s" % industry_pollution)
+    print("industry_gravity             = %s" % industry_gravity)
+    print("industry_base                = %s" % industry_base)
+    print("industry_per_worker          = %s" % industry_per_worker)
+    print("industry_per_colony          = %s" % industry_per_colony)
+    print("industry_bonus_gov           = %s" % industry_bonus_gov)
+    print("industry_bonus_hero          = %s" % industry_bonus_hero)
+    print("industry_total               = %s" % industry_total)
 
     # ---------------------------------------------------------------------------
     # Finish RESEARCH computation
