@@ -417,6 +417,7 @@ class Game_Main(object):
                 elif build_total > build_cost:  # All others assumed to be normal buildings
                     print 'Building completed.  Adding to colony and resetting colony industry_progress.'
                     colony.add_building(production_id)
+# TODO JWL handle repeat -- don't remove if repeat still possible (note terraforming can repeat sometimes, but it runs out)
                     colony.remove_build_item(production_id)
                     colony.reset_industry_progress()
                 #colony.debug_production(self.d_rules)

@@ -19,31 +19,31 @@ class Game_Colony(Game_Object.Game_Object):
         self.b_mixed_race               = False
         self.d_colonists                = {K_FARMER: [], K_WORKER: [], K_SCIENTIST: []}
         self.v_build_queue              = []
-        self.v_build_queue_ids          = []
         self.d_available_production     = {}
+        self.d_prod_summary             = {}
         self.v_max_populations          = []
         # Loaded:
         self.i_colony_id                = i_colony_id
         self.i_owner_id                 = 0
-        self.i_allocated_to             = 0
+        #self.i_allocated_to             = 0
         self.i_planet_id                = 0
-        self.i_officer_id               = 0
+        #self.i_officer_id               = 0
         self.b_is_outpost               = False
         self.i_morale                   = 0
         self.i_pollution                = 0
         self.i_population               = 0
-        self.i_assignment               = 0
+        #self.i_assignment               = 0
         self.v_pop_raised               = []
         self.v_pop_grow                 = []
-        self.i_num_turns_existed        = 0
-        self.i_food2_per_farmer         = 0
-        self.i_industry_per_worker      = 0
-        self.i_research_per_scientist   = 0
-        self.i_max_farms                = 0
+        #self.i_num_turns_existed        = 0
+        #self.i_food_per_farmer          = 0  # Not currently used
+        #self.i_industry_per_worker      = 0  # Not currently used
+        #self.i_research_per_scientist   = 0  # Not currently used
+        #self.i_max_farms                = 0
         self.i_max_population           = 0
         self.i_climate                  = 0
-        self.i_ground_strength          = 0
-        self.i_space_strength           = 0
+        #self.i_ground_strength          = 0  # Not currently used
+        #self.i_space_strength           = 0  # Not currently used
         self.i_food                     = 0
         self.i_industry                 = 0
         self.i_research                 = 0
@@ -54,25 +54,25 @@ class Game_Colony(Game_Object.Game_Object):
     def construct(self, d_init_struct, PLAYERS):
         self.i_colony_id                = d_init_struct['colony_id']
         self.i_owner_id                 = d_init_struct['owner_id']
-        self.i_allocated_to             = d_init_struct['allocated_to']
+        #self.i_allocated_to             = d_init_struct['allocated_to']
         self.i_planet_id                = d_init_struct['planet_id']
-        self.i_officer_id               = d_init_struct['officer_id']
+        #self.i_officer_id               = d_init_struct['officer_id']
         self.b_is_outpost               = d_init_struct['is_outpost']
         self.i_morale                   = d_init_struct['morale']
         self.i_pollution                = d_init_struct['pollution']
         self.i_population               = d_init_struct['population']
-        self.i_assignment               = d_init_struct['assignment']
+        #self.i_assignment               = d_init_struct['assignment']
         self.v_pop_raised               = d_init_struct['pop_raised']
         self.v_pop_grow                 = d_init_struct['pop_grow']
-        self.i_num_turns_existed        = d_init_struct['num_turns_existed']
-        self.i_food2_per_farmer         = d_init_struct['food2_per_farmer']
-        self.i_industry_per_worker      = d_init_struct['industry_per_worker']
-        self.i_research_per_scientist   = d_init_struct['research_per_scientist']
-        self.i_max_farms                = d_init_struct['max_farms']
-        self.i_max_population           = d_init_struct['max_population']
+        #self.i_num_turns_existed        = d_init_struct['num_turns_existed']
+        #self.i_food_per_farmer          = d_init_struct['food_per_farmer']
+        #self.i_industry_per_worker      = d_init_struct['industry_per_worker']
+        #self.i_research_per_scientist   = d_init_struct['research_per_scientist']
+        #self.i_max_farms                = d_init_struct['max_farms']
+        #self.i_max_population           = d_init_struct['max_population']
         self.i_climate                  = d_init_struct['climate']
-        self.i_ground_strength          = d_init_struct['ground_strength']
-        self.i_space_strength           = d_init_struct['space_strength']
+        #self.i_ground_strength          = d_init_struct['ground_strength']
+        #self.i_space_strength           = d_init_struct['space_strength']
         self.i_food                     = d_init_struct['food']
         self.i_industry                 = d_init_struct['industry']
         self.i_research                 = d_init_struct['research']
@@ -138,19 +138,18 @@ class Game_Colony(Game_Object.Game_Object):
         self.i_industry_progress = 0
 # ------------------------------------------------------------------------------
     def get_build_queue_ids(self):
-        id_list = []
-        for item in self.v_build_queue:
-            id_list.append(item['production_id'])
-        return id_list
+        return self.v_build_queue
 # ------------------------------------------------------------------------------
     def add_build_item(self, production_id, flags = 0):
         if len(self.v_build_queue) < 7:
-           self.v_build_queue.append({'production_id': production_id, 'flags': flags})
+           self.v_build_queue.append(production_id)
 # ------------------------------------------------------------------------------
     def remove_build_item(self, production_id):
-        build_queue_ids = self.v_build_queue_ids
-        if production_id in build_queue_ids:
-            self.v_build_queue.pop(build_queue_ids.index(production_id))
+        try:
+            i_index = self.v_build_queue.index(production_id)
+            self.v_build_queue.pop(i_index)
+        except:
+            print 'ERROR: remove_build_item <%d> - no such item' % production_id
 # ------------------------------------------------------------------------------
     def get_build_item(self):
         if len(self.v_build_queue) < 1:
@@ -163,7 +162,7 @@ class Game_Colony(Game_Object.Game_Object):
             return self.v_build_queue[0]
 # ------------------------------------------------------------------------------
     def in_build_queue(self, production_id):
-        return production_id in self.v_build_queue_ids
+        return production_id in self.v_build_queue
 # ------------------------------------------------------------------------------
     def get_aggregated_populations(self):
         pops    = [0, 0, 0, 0, 0, 0, 0, 0]
@@ -197,8 +196,10 @@ class Game_Colony(Game_Object.Game_Object):
         return self.i_population
 # ------------------------------------------------------------------------------
     def recount_outpost(self):
+        self.i_morale         = 100.0
         self.i_population     = 0
         self.i_pollution      = 0
+        self.i_food           = 0
         self.i_industry       = 0
         self.i_research       = 0
         self.d_prod_summary   = {}
@@ -238,8 +239,52 @@ class Game_Colony(Game_Object.Game_Object):
         end_clock = time.clock()
         print "$$$ colony::recount() ... clock elapsed = %f" % (end_clock-start_clock)
 # ------------------------------------------------------------------------------
-    def print_info(self):
-        print "  owner_id: %i" % self.i_owner_id
+    def as_str(self, x):
+        return "'" + x + "'"
+# ------------------------------------------------------------------------------
+    def serialize(self):
+        ''' Minimal-exchange highly trusted updater; avoiding pickle since objects contain so much static data. '''
+        # Static values that are light weight and useful to include for debugging.
+        s_fixed  = '\nself.i_id                  = ' + str(self.i_id)                   +  \
+                   '\nself.i_colony_id           = ' + str(self.i_colony_id)            +  \
+                   '\nself.i_planet_id           = ' + str(self.i_planet_id)
+
+        # Values that change often and transmit every turn.
+        s_often =  '\nself.b_is_outpost           = ' + str(self.b_is_outpost)           +  \
+                   '\nself.i_owner_id             = ' + str(self.i_owner_id)             +  \
+                   '\nself.i_climate              = ' + str(self.i_climate)              +  \
+                   '\nself.i_bc                   = ' + str(self.i_bc)                   +  \
+                   '\nself.i_morale               = ' + str(self.i_morale)               +  \
+                   '\nself.i_pollution            = ' + str(self.i_pollution)            +  \
+                   '\nself.i_food                 = ' + str(self.i_food)                 +  \
+                   '\nself.i_industry             = ' + str(self.i_industry)             +  \
+                   '\nself.i_industry_progress    = ' + str(self.i_industry_progress)    +  \
+                   '\nself.i_research             = ' + str(self.i_research)             +  \
+                   '\nself.b_mixed_race           = ' + str(self.b_mixed_race)           +  \
+                   '\nself.i_population           = ' + str(self.i_population)           +  \
+                   '\nself.i_max_population       = ' + str(self.i_max_population)       +  \
+                   '\nself.v_max_populations      = ' + str(self.v_max_populations)      +  \
+                   '\nself.v_pop_raised           = ' + str(self.v_pop_raised)           +  \
+                   '\nself.v_pop_grow             = ' + str(self.v_pop_grow)             +  \
+                   '\nself.i_num_marines          = ' + str(self.i_num_marines)          +  \
+                   '\nself.i_num_armors           = ' + str(self.i_num_armors)
+
+        # Large/complex data types that rarely change and should be tracked
+        # via a 'dirty_XXX' flag.
+        s_rare =   '\nself.v_build_queue          = ' + str(self.v_build_queue)          +  \
+                   '\nself.v_building_ids         = ' + str(self.v_building_ids)
+                   #'\nself.d_colonists            = ' + str(self.d_colonists)            +  \
+                   #'\nself.d_available_production = ' + str(self.d_available_production) +  \
+                   #'\nself.d_prod_summary         = ' + str(self.d_prod_summary)
+        s_serial = s_fixed + s_often + s_rare
+        print s_serial
+        return s_serial
+# ------------------------------------------------------------------------------
+    def unserialize(self, s_serial):
+        try:
+            exec(s_serial)
+        except Exception as ex:
+            print ("unserialize: exception: " + str(ex))
 # ------------------------------------------------------------------------------
     def display_summary(self, s_prefix):
         v_summary = []  # Used by the GUI for popup display.
