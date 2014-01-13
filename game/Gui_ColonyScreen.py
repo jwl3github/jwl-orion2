@@ -16,6 +16,8 @@ class Gui_ColonyScreen(Gui_Screen.Gui_Screen):
         self.o_planet    = None
         self.i_star_id   = -1
         self.o_star      = None
+        self.i_move_from_colonist_type  = 0
+        self.i_move_from_colonist_index = 0
 # ------------------------------------------------------------------------------
     def open_colony(self, i_colony_id):
         self.i_colony_id = i_colony_id
@@ -24,6 +26,8 @@ class Gui_ColonyScreen(Gui_Screen.Gui_Screen):
         self.o_planet    = self.get_planet(self.i_planet_id)
         self.i_star_id   = self.o_planet.i_star_id
         self.o_star      = self.get_star(self.i_star_id)
+        self.i_move_from_colonist_type  = 0
+        self.i_move_from_colonist_index = 0
 # ------------------------------------------------------------------------------
     def reset_triggers_list(self):
         super(Gui_ColonyScreen,self).reset_triggers_list()
@@ -66,7 +70,6 @@ class Gui_ColonyScreen(Gui_Screen.Gui_Screen):
             object_id = star.v_object_ids[i]
             if object_id != 0xFFFF:
                 o_object = PLANETS[object_id]
-                print "type: %i" % o_object.i_type
 
                 if o_object.is_asteroid_belt():
                     x = 6
@@ -85,6 +88,7 @@ class Gui_ColonyScreen(Gui_Screen.Gui_Screen):
                     y = 26 + (24 * i) + [6, 4, 2, 1, 0][o_object.i_size]
                     self.blit(self.get_image('planet_scheme', o_object.i_terrain, o_object.i_size), (x, y))
                     self.write_text(K_FONT2, K_PALETTE_SCHEMES_FONT, 40, y + 5,  o_object.s_name)
+                    ##JWL: TODO Also need triggers to switch view to this planet if it has a colony
 
         # Screen title / Population summary
         title_text    = "%s of %s" % (Data_CONST.get_text_list('COLONY_ASSIGNMENT')[colony.i_assignment], colony.s_name)
@@ -127,7 +131,7 @@ class Gui_ColonyScreen(Gui_Screen.Gui_Screen):
         ICON_AND_Y_OFFSET = { K_FARMER: (1,62), K_WORKER: (3,92), K_SCIENTIST: (5,122) }
         for t in (K_FARMER, K_WORKER, K_SCIENTIST):
             c = len(colony.d_colonists[t])
-            xx = 30 if c < 7 else 190/c
+            xx = 30 if c < 7 else 190/c   # Adjust for normal versus overlapped colonist icons
             icon, y = ICON_AND_Y_OFFSET[t]
 
             for i in range(c):
@@ -137,7 +141,7 @@ class Gui_ColonyScreen(Gui_Screen.Gui_Screen):
                 self.blit(self.get_image('race_icon', picture, icon), (x, y))
                 if i == (c - 1):
                     xx = 28 # enlarge the Rect of last icon (no other icon is drawn over it...)
-                self.add_trigger({'action': "pick-colonist:%.2x:%i" % (t, (c - i)), 'rect': pygame.Rect((x, y), (xx, 28))})
+                self.add_trigger({'action': "pick-colonist:0x%.2x:%i" % (t, i), 'rect': pygame.Rect((x, y), (xx, 28))})
 
         # Marines / Armors / Mechs
         x = 0
@@ -149,38 +153,79 @@ class Gui_ColonyScreen(Gui_Screen.Gui_Screen):
 # ------------------------------------------------------------------------------
     def process_trigger(self, o_trigger):
 
-        i_colony_id = self.i_colony_id
-        o_colony    = self.get_colony(i_colony_id)
+        s_action = o_trigger['action']
+        print 'Gui_ColonyScreen.process_trigger() - action = ' + s_action
 
-        Network_Client.Client.fetch_colony_prod_summary(i_colony_id)
+        if s_action == "summary":
 
-        if o_trigger['action'] == "summary":
+            Network_Client.Client.fetch_colony_prod_summary(i_colony_id)
             s_summary = o_trigger['summary']
 
             if s_summary == "morale":
                 Gui_TextBox.Screen.s_title = 'Morale Summary'
-                Gui_TextBox.Screen.v_text_lines = o_colony.print_morale_summary()
+                Gui_TextBox.Screen.v_text_lines = self.o_colony.print_morale_summary()
 
             elif s_summary == "bc":
                 Gui_TextBox.Screen.s_title = 'BC Summary'
-                Gui_TextBox.Screen.v_text_lines = o_colony.print_bc_summary()
+                Gui_TextBox.Screen.v_text_lines = self.o_colony.print_bc_summary()
 
             elif s_summary == "food":
                 Gui_TextBox.Screen.s_title = 'Food Summary'
-                Gui_TextBox.Screen.v_text_lines = o_colony.print_food_summary()
+                Gui_TextBox.Screen.v_text_lines = self.o_colony.print_food_summary()
 
             elif s_summary == "industry":
                 Gui_TextBox.Screen.s_title = 'Industry Summary'
-                Gui_TextBox.Screen.v_text_lines = o_colony.print_industry_summary()
+                Gui_TextBox.Screen.v_text_lines = self.o_colony.print_industry_summary()
 
             elif s_summary == "research":
                 Gui_TextBox.Screen.s_title = 'Research Summary'
-                Gui_TextBox.Screen.v_text_lines = o_colony.print_research_summary()
-
+                Gui_TextBox.Screen.v_text_lines = self.o_colony.print_research_summary()
             else:
                 return
 
             self.run_screen(Gui_TextBox.Screen)
             self.redraw_flip()
+        elif s_action == 'leaders':
+            print 'Gui_ColonyScreen: "leaders" action handling TBD'
+        elif s_action == 'buy':
+            print 'Gui_ColonyScreen: "buy" action handling TBD'
+        elif s_action.startswith('pick-colonist'):
+            c_tag, c_type, c_index = s_action.split(':')
+            self.i_move_from_colonist_type  = int(c_type, 16)
+            self.i_move_from_colonist_index = int(c_index)
+            self.add_trigger({'action': "drop-colonist-food",     'rect': pygame.Rect((127,  61), (700, 25))}, True)
+            self.add_trigger({'action': "drop-colonist-industry", 'rect': pygame.Rect((127,  91), (700, 25))}, True)
+            self.add_trigger({'action': "drop-colonist-research", 'rect': pygame.Rect((127, 121), (700, 25))}, True)
+            ##JWL: TODO Also need trigger to drop onto another planet.
+            ##JWL: TODO maybe implement as a change-to-action-value for the existing 'view-planet' trigger
+        elif s_action == 'drop-colonist-food':
+            self.move_colonists_to(K_FARMER)
+        elif s_action == 'drop-colonist-industry':
+            self.move_colonists_to(K_WORKER)
+        elif s_action == 'drop-colonist-research':
+            self.move_colonists_to(K_SCIENTIST)
+        else:
+            print 'Gui_ColonyScreen: Do not know how to handle trigger action = ' + o_trigger['action']
+# ------------------------------------------------------------------------------
+    def move_colonists_to(self, new_type):
+        t = self.i_move_from_colonist_type
+        i = self.i_move_from_colonist_index
+        print 'move_colonists_to -> t [%d] i [%d]  new_t [%d]' % (t, i, new_type)
+        if t == 0:
+            pass  # Invalid type.
+        elif t == new_type:
+            print 'Colonists moved back to same job.'
+        else:
+            c = len(self.o_colony.d_colonists[t]) - 1
+            while c >= i:
+                colonist = self.o_colony.d_colonists[t][c]
+                if (new_type != K_FARMER) and (colonist.android or colonist.rioting or colonist.native):
+                    print 'Cannot move colonist to unqualified job.'
+                else:
+                    self.o_colony.d_colonists[new_type].append(self.o_colony.d_colonists[t].pop(c))
+                c -= 1
+        self.i_move_from_colonist_type  = 0
+        self.i_move_from_colonist_index = 0
+        self.draw()
 # ------------------------------------------------------------------------------
 Screen = Gui_ColonyScreen()

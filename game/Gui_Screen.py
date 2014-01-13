@@ -178,11 +178,15 @@ class Gui_Screen(object):
         """Clears the screen's trigger list"""
         self.__triggers = []
 
-    def add_trigger(self, trigger):
+    def add_trigger(self, trigger, prepend = False):
         """Appends given trigger to the end of screen's trigger list"""
         if not trigger.has_key('hover_id'):
             trigger['hover_id'] = None
-        self.__triggers.append(trigger)
+        if prepend:
+            print 'Prepend trigger'
+            self.__triggers.insert(0, trigger)
+        else:
+            self.__triggers.append(trigger)
 
     def list_triggers(self):
         """Returns the screen's list of triggers"""
