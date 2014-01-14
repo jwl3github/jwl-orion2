@@ -81,14 +81,20 @@ class Game_Colony(Game_Object.Game_Object):
         self.v_building_ids             = d_init_struct['building_ids']
         for i_type, v_colonists in d_init_struct['colonists'].items():
             for d_colonist in v_colonists:
-                o_colonist        = Game_Colonist.Game_Colonist(d_colonist['r1'], d_colonist['race'], PLAYERS)
+                o_colonist        = Game_Colonist.Game_Colonist(d_colonist['r1'], d_colonist['race'])
                 o_colonist.a      = d_colonist['a']
                 o_colonist.b      = d_colonist['b']
                 o_colonist.c      = d_colonist['c']
                 o_colonist.d      = d_colonist['d']
+                o_colonist.init(PLAYERS)
                 self.d_colonists[i_type].append(o_colonist)
                 if o_colonist.race != self.i_owner_id:
                     self.b_mixed_race = True
+# ------------------------------------------------------------------------------
+    def allows_farming(self):
+        if (self.o_planet.i_foodbase > 0):
+            return True
+        return False ### TODO  Check radiated vs shield, etc
 # ------------------------------------------------------------------------------
     def has_building(self, building_id):
         return building_id in self.v_building_ids
@@ -184,7 +190,8 @@ class Game_Colony(Game_Object.Game_Object):
             self.v_pop_raised[i_race] += self.v_pop_grow[i_race]
             if self.v_pop_raised[i_race] > 999:
                 # the race that turns over 999 in v_pop_raised gets a new farmer
-                colonist = Game_Colonist(self.i_owner_id, i_race, PLAYERS)
+                colonist = Game_Colonist.Game_Colonist(self.i_owner_id, i_race)
+                colonist.init(PLAYERS)
                 self.d_colonists[K_FARMER].append(colonist)
                 self.v_pop_raised[i_race] -= 1000
                 self.i_population += 1
@@ -242,6 +249,12 @@ class Game_Colony(Game_Object.Game_Object):
     def as_str(self, x):
         return "'" + x + "'"
 # ------------------------------------------------------------------------------
+    def serialize_prod_summary(self):
+        s_serial = ''
+        for k,v in self.d_prod_summary.items():
+            s_serial += '\nself.d_prod_summary["%s"] = %s' % (k, str(v))
+        return s_serial
+# ------------------------------------------------------------------------------
     def serialize(self):
         ''' Minimal-exchange highly trusted updater; avoiding pickle since objects contain so much static data. '''
         # Static values that are light weight and useful to include for debugging.
@@ -273,8 +286,8 @@ class Game_Colony(Game_Object.Game_Object):
         # via a 'dirty_XXX' flag.
         s_rare =   '\nself.v_build_queue          = ' + str(self.v_build_queue)          +  \
                    '\nself.v_building_ids         = ' + str(self.v_building_ids)         +  \
-                   self.serialize_available_production()
-                   #self.serialize_colonists()
+                   self.serialize_available_production()                                 +  \
+                   self.serialize_colonists()
         s_serial = s_fixed + s_often + s_rare
         print s_serial
         return s_serial
@@ -282,26 +295,65 @@ class Game_Colony(Game_Object.Game_Object):
     def serialize_available_production(self):
         s_serial = ''
         for k,v in self.d_available_production.items():
-            s_serial += '\nself.d_available_production["' + k + '"] = ' + str(v)
+            s_serial += '\nself.d_available_production["%s"] = %s' % (k, str(v))
         return s_serial
 # ------------------------------------------------------------------------------
     def serialize_colonists(self):
-        s_serial = ''
-        #for k,v in self.d_prod_summary.items():
-        #    s_serial += '\nself.d_colonists["' + k + '"] = ' + str(v)
+        s_data = ''
+        for i_type in (K_FARMER, K_WORKER, K_SCIENTIST):
+            i_index = 0
+            s_data   += '%d=' % i_type
+            i_count   = 0
+            i_race    = None
+            b_riot    = False
+            c_grav    = 'N'
+            for o_colonist in self.d_colonists[i_type]:
+                if (i_race != None) and (i_race == o_colonist.race) and (b_riot == o_colonist.is_rioting()):
+                    i_count += 1
+                else:
+                    if (i_race != None):
+                        c_riot  = '-' if b_riot else '+'
+                        s_data   += '%d,%c,%d,%c|' % (i_count, c_riot, i_race, c_grav)
+                    i_count = 1
+                    i_race  = o_colonist.race
+                    b_riot  = o_colonist.is_rioting()
+                    if   o_colonist.b_high_g: c_grav = 'H'
+                    elif o_colonist.b_low_g:  c_grav = 'L'
+                    else:                     c_grav = 'N'
+            if (i_race != None):
+                c_riot  = '-' if b_riot else '+'
+                s_data += '%d,%c,%d,%c|' % (i_count, c_riot, i_race, c_grav)
+            s_data += ' '
+        s_serial = '\nself.unserialize_colonists("%s")' % (s_data)
         return s_serial
 # ------------------------------------------------------------------------------
-    def serialize_prod_summary(self):
-        s_serial = ''
-        for k,v in self.d_prod_summary.items():
-            s_serial += '\nself.d_prod_summary["' + k + '"] = ' + str(v)
-        return s_serial
+    def unserialize_colonists(self, s_serial):
+        self.d_colonists = {K_FARMER: [], K_WORKER: [], K_SCIENTIST: []}
+        for s_group in s_serial.split(' '):
+            if not s_group:
+                continue
+            print 'grp <' + s_group + '>'
+            s_type, s_data = s_group.split('=')
+            i_type = int(s_type)
+            for s_member in s_data.split('|'):
+                if not s_member:
+                    continue
+                print 'mem <' + s_member + '>'
+                s_count, s_riot, s_race, s_grav = s_member.split(',')
+                b_rioting = True if s_riot == '-' else False
+                b_low_g   = True if s_grav == 'L' else False
+                b_high_g  = True if s_grav == 'H' else False
+                for i in range(int(s_count)):
+                    o_colonist = Game_Colonist.Game_Colonist(self.i_owner_id, int(s_race))
+                    o_colonist.init_unserialized(i_type, b_rioting, b_low_g, b_high_g)
+                    self.d_colonists[i_type].append(o_colonist)
 # ------------------------------------------------------------------------------
     def unserialize(self, s_serial):
         try:
             exec(s_serial)
         except Exception as ex:
             print ("unserialize: exception: " + str(ex))
+            print ("unserialize: (dump) " + s_serial)
 # ------------------------------------------------------------------------------
     def display_summary(self, s_prefix):
         v_summary = []  # Used by the GUI for popup display.

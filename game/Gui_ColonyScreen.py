@@ -158,7 +158,7 @@ class Gui_ColonyScreen(Gui_Screen.Gui_Screen):
 
         if s_action == "summary":
 
-            Network_Client.Client.fetch_colony_prod_summary(i_colony_id)
+            Network_Client.Client.fetch_colony_prod_summary(self.o_colony.i_colony_id)
             s_summary = o_trigger['summary']
 
             if s_summary == "morale":
@@ -207,23 +207,21 @@ class Gui_ColonyScreen(Gui_Screen.Gui_Screen):
         else:
             print 'Gui_ColonyScreen: Do not know how to handle trigger action = ' + o_trigger['action']
 # ------------------------------------------------------------------------------
-    def move_colonists_to(self, new_type):
+    def move_colonists_to(self, new_job_type):
         t = self.i_move_from_colonist_type
         i = self.i_move_from_colonist_index
-        print 'move_colonists_to -> t [%d] i [%d]  new_t [%d]' % (t, i, new_type)
+        print 'move_colonists_to -> t [%d] i [%d]  new_t [%d]' % (t, i, new_job_type)
         if t == 0:
             pass  # Invalid type.
-        elif t == new_type:
+        elif t == new_job_type:
             print 'Colonists moved back to same job.'
+        elif (new_job_type == K_FARMER) and not self.o_colony.allows_farming():
+            print 'Cannot have farmers on this planet. Job change ignored.'
         else:
-            c = len(self.o_colony.d_colonists[t]) - 1
-            while c >= i:
-                colonist = self.o_colony.d_colonists[t][c]
-                if (new_type != K_FARMER) and (colonist.android or colonist.rioting or colonist.native):
-                    print 'Cannot move colonist to unqualified job.'
-                else:
-                    self.o_colony.d_colonists[new_type].append(self.o_colony.d_colonists[t].pop(c))
-                c -= 1
+            super(Gui_ColonyScreen,self).change_colonist_job(self.o_colony.i_colony_id,
+                                                             self.i_move_from_colonist_type,
+                                                             self.i_move_from_colonist_index,
+                                                             new_job_type)
         self.i_move_from_colonist_type  = 0
         self.i_move_from_colonist_index = 0
         self.draw()

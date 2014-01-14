@@ -48,15 +48,15 @@ def count_colony_pollution(RULES, colony, colony_leader, industry_total, PLAYERS
         return 0
 
     # Per-colonist tolerance calcuation.
-    total_pop    = colony.total_population()
-    tolerant_pop = 0
+    i_total_pop    = colony.total_population()
+    i_tolerant_pop = 0
 
     for t in (K_FARMER, K_SCIENTIST, K_WORKER):
-        for colonist in colony.d_colonists[t]:
-            if colonist.android or PLAYERS[colonist.race].get_racepick_item('tolerant'):
+        for o_colonist in colony.d_colonists[t]:
+            if o_colonist.is_android() or PLAYERS[o_colonist.race].get_racepick_item('tolerant'):
                 tolerant_pop += 1
 
-    pollution *= float(total_pop - tolerant_pop) / float(total_pop)
+    pollution *= float(i_total_pop - i_tolerant_pop) / float(i_total_pop)
 
     return round(pollution)
 # ------------------------------------------------------------------------------
@@ -70,9 +70,9 @@ def get_hero_bonus(hero, skill_name):
 # ------------------------------------------------------------------------------
 def colonist_food_base(colonist, colonist_player, planet, food_per_farmer):
     ### JWL: TODO I forget, do Natives and Androids have a fixed base?
-    # if colonist.android: return K_ANDROID_FOOD_BASE  # 2.0?
-    # if colonist.native:  return K_NATIVES_FOOD_BASE  # 2.0?
-    # if colonist.rioting: return min(K_RIOTERS_FOOD_BASE, planet.i_foodbase)  # 1.0?
+    # if colonist.is_android(): return K_ANDROID_FOOD_BASE  # 2.0?
+    # if colonist.is_native():  return K_NATIVES_FOOD_BASE  # 2.0?
+    # if colonist.is_rioting(): return min(K_RIOTERS_FOOD_BASE, planet.i_foodbase)  # 1.0?
     b_is_aquatic_planet = (planet.i_terrain in [K_TERRAIN_OCEAN, K_TERRAIN_TERRAN])
     colonist_food = planet.i_foodbase
     if b_is_aquatic_planet and colonist_player.get_racepick_item('aquatic'):
@@ -82,22 +82,22 @@ def colonist_food_base(colonist, colonist_player, planet, food_per_farmer):
 def colonist_industry_base(RULES, colonist, colonist_player, planet, industry_per_worker):
     # Note: natives and rioters can only be farmers, so no check done here.
     ### JWL: TODO I forget, do Androids have a fixed base?
-    # if colonist.android: return K_ANDROID_RESEARCH_BASE
+    # if colonist.is_android(): return K_ANDROID_RESEARCH_BASE
     colonist_industry = RULES['worker_base'][planet.i_minerals]
     return colonist_industry * (colonist_player.get_racepick_item('industry') + 100.0) / 100.0
 # ------------------------------------------------------------------------------
 def colonist_research_base(RULES, colonist, colonist_player, planet, research_per_scientist):
     # Note: natives and rioters can only be farmers, so no check done here.
     ### JWL: TODO I forget, do Androids have a fixed base?
-    # if colonist['android']: return K_ANDROID_RESEARCH_BASE
+    # if colonist.is_android(): return K_ANDROID_RESEARCH_BASE
     colonist_research = research_per_scientist
     if planet.has_artifacts():
         colonist_research += RULES['planets_specials'][K_SPECIAL_ARTIFACTS]['research_bonus']
     return colonist_research * (colonist_player.get_racepick_item('research') + 100.0) / 100.0
 # ------------------------------------------------------------------------------
 def colonist_morale_mult(colonist, morale_total):
-    if colonist.android: return 1.0
-    if colonist.rioting: return 1.0
+    if colonist.is_android(): return 1.0
+    if colonist.is_rioting(): return 1.0
     return morale_total / 100.0
 # ------------------------------------------------------------------------------
 def compose_prod_summary(RULES, colony, colony_leader, PLAYERS):

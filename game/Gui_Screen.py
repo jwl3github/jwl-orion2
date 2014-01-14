@@ -111,6 +111,9 @@ class Gui_Screen(object):
     def list_prototypes(self):
         return Network_Client.Client.list_prototypes()
 
+    def change_colonist_job(self, i_colony_id, i_from_job, i_from_index, i_to_job):
+        return Network_Client.Client.change_colonist_job(i_colony_id, i_from_job, i_from_index, i_to_job)
+
     def set_research(self, i_tech_id):
         return Network_Client.Client.set_research(i_tech_id)
 

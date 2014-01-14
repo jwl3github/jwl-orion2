@@ -222,6 +222,47 @@ class Game_Main(object):
         o_player.i_research_turns_left  = Game_Rules.research_turns(o_player.i_research_cost, o_player.i_research_progress, o_player.i_research)
         return True   # Checked by Network_Server
 # ------------------------------------------------------------------------------
+    def change_colonist_job(self, i_player_id, i_colony_id, i_from_job, i_from_index, i_to_job):
+        if not self.d_colonies.has_key(i_colony_id):
+            print 'change_colonist_job: Invalid colony id (no such colony): ' + i_colony_id
+            return False
+
+        o_colony = self.d_colonies[i_colony_id] if self.d_colonies.has_key(i_colony_id) else None
+        if o_colony.i_owner_id != i_player_id:
+            print 'change_colonist_job: Request from incorrect player <%d> owned by <%d>' % (i_player_id, o_colony.i_owner_id)
+            return False
+
+        print 'change_colonist_job -> from [%d] index [%d]  to [%d]' % (i_from_job, i_from_index, i_to_job)
+        if i_from_job not in (K_FARMER, K_WORKER, K_SCIENTIST):
+            print 'Invalid i_from_job <%d>' % i_from_job
+            return False
+
+        if i_to_job not in (K_FARMER, K_WORKER, K_SCIENTIST):
+            print 'Invalid i_to_job <%d>' % i_to_job
+            return False
+
+        if i_from_job == i_to_job:
+            print 'Colonists moved back to same job. Job change ignored.'
+            return True
+
+        if (i_to_job == K_FARMER) and not o_colony.allows_farming():
+            print 'Cannot have farmers on this planet. Job change ignored.'
+            return True
+
+        c = len(o_colony.d_colonists[i_from_job]) - 1
+        while c >= i_from_index:
+            if o_colony.d_colonists[i_from_job][c].allowed_job(i_to_job):
+                print 'Cannot move colonist <%d> to unqualified job. Job change ignored.' % c
+            else:
+                o_colony.d_colonists[i_to_job].append(o_colony.d_colonists[i_from_job].pop(c))
+                o_colony.d_colonists[i_to_job].set_job(i_to_job)
+            c -= 1
+
+        self.recount_colony(i_colony_id)
+        self.recount_player(i_player_id)
+        return True
+
+# ------------------------------------------------------------------------------
     def determine_player_research_areas(self, o_player):
         # Determine the player's upcoming research area by checking
         # for a known tech in the progressive area of each tech
@@ -261,24 +302,30 @@ class Game_Main(object):
         self.d_colonies[i_colony_id].v_build_queue = v_build_queue
         return True
 # ------------------------------------------------------------------------------
-    def recount_players(self):
-        print "=== Recount Players ==="
+    def recount_colony(self, i_colony_id):
+        if self.d_colonies.has_key(i_colony_id):
+            self.d_colonies[i_colony_id].recount(self.d_rules, self.get_governor(i_colony_id), self.d_players)
+# ------------------------------------------------------------------------------
+    def recount_player(self, i_player_id):
+        print "=== Recount Player <%d> ===" % i_player_id
 
-        # Calculate each player's global balance for food and research.
-        for i_player_id, o_player in self.d_players.items():
+        if self.d_players.has_key(i_player_id):
+            o_player = self.d_players[i_player_id]
             o_player.i_research = 0
             o_player.i_food     = 0
 
-        for i_colony_id, o_colony in self.d_colonies.items():
-            if o_colony.exists():
-                o_player = self.d_players[o_colony.i_owner_id]
-                o_player.i_research += o_colony.i_research
-                o_player.i_food     += o_colony.i_food - o_colony.total_population()
+            for i_colony_id, o_colony in self.d_colonies.items():
+                if o_colony.exists() and (o_colony.i_owner_id == i_player_id):
+                    o_player.i_research += o_colony.i_research
+                    o_player.i_food     += o_colony.i_food - o_colony.total_population()
 
-        for i_player_id in range(K_MAX_PLAYERS):
-            o_player = self.d_players[i_player_id]
             if o_player.alive():
                 self.update_research(i_player_id, o_player.i_research_tech_id)
+# ------------------------------------------------------------------------------
+    def recount_players(self):
+        print "=== Recount Players ==="
+        for i_player_id in range(K_MAX_PLAYERS):
+            self.recount_player(i_player_id)
 # ------------------------------------------------------------------------------
     def get_stars_for_player(self, i_player_id):
         """ Returns a dictionary of all stars in galaxy.

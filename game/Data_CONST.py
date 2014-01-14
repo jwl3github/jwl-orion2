@@ -5,6 +5,26 @@ K_MAX_WEAPONS_PER_SHIP    = 8
 K_MAX_STAR_OBJECTS        = 5
 K_MAX_BUILD_QUEUE         = 8
 
+K_RACE_0                  = 0
+K_RACE_1                  = 1
+K_RACE_2                  = 2
+K_RACE_3                  = 3
+K_RACE_4                  = 4
+K_RACE_5                  = 5
+K_RACE_6                  = 6
+K_RACE_7                  = 7
+K_RACE_ANTARAN            = 8
+K_RACE_ORION              = 9
+K_RACE_AMOEBA             = 10
+K_RACE_CRYSTAL            = 11
+K_RACE_DRAGON             = 12
+K_RACE_EEL                = 13
+K_RACE_HYDRA              = 14
+K_RACE_ANDROID_FARMER     = 15   # Only used for colonist type (cannot index into d_players[])
+K_RACE_ANDROID_WORKER     = 16   # Only used for colonist type (cannot index into d_players[])
+K_RACE_ANDROID_SCIENTIST  = 17   # Only used for colonist type (cannot index into d_players[])
+K_RACE_NATIVE             = 18   # Only used for colonist type (cannot index into d_players[])
+
 K_SHIP_SIZE_SMALL         = 0
 K_SHIP_SIZE_MEDIUM        = 1
 K_SHIP_SIZE_LARGE         = 2
@@ -245,7 +265,7 @@ K_TEXT_LIST_DICT = {
     'COLONY_TYPES':             ["Colony", "Outpost"],
     'COLONY_ASSIGNMENT':        {0x00: "???", 0x01:"Agricultural Colony", 0x02: "Industrial Colony", 0x03: "Research Colony", 0xff: "Colony"},
 
-    'RACE_PICTURES ':           ["Alkari", "Bulrathi", "Darlok", "Elerian", "Gnolam", "Human", "Klackon", "Meklar", "Mrrshan", "Psilon", "Sakkra", "Silicoid", "Trilarian"],
+    'RACE_PICTURES ':           ["Alkari", "Bulrathi", "Darlok", "Elerian", "Gnolam", "Human", "Klackon", "Meklar", "Mrrshan", "Psilon", "Sakkra", "Silicoid", "Trilarian", "Android"],
 
     'PLANET_TYPES':             ['?', 'Asteroids', 'Gas Giant', 'Planet', '??', '???', '????', '?????'],
     'PLANET_SIZES':             ['Tiny', 'Small', 'Medium', 'Large', 'Huge'],

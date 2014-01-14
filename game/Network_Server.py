@@ -195,6 +195,13 @@ class Network_Server(object):
             data = self.get_data_for_player(player_id)
             self.send_data_to_game_client(client_socket, thread_id, data)
 
+        elif ACTION == "CHANGE_COLONIST_JOB":
+            i_colony_id  = PARAMS['i_colony_id']
+            i_from_job   = PARAMS['i_from_job']
+            i_from_index = PARAMS['i_from_index']
+            i_to_job     = PARAMS['i_to_job']
+            self.o_game.change_colonist_job(player_id, i_colony_id, i_from_job, i_from_index, i_to_job)
+
         elif ACTION == "SET_RESEARCH":
             i_tech_id = PARAMS['tech_id']
             if not self.o_game.update_research(player_id, i_tech_id):

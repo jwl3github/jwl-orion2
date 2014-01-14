@@ -288,13 +288,13 @@ class Moo2_Savegame(object):
 
             d_players[i_player_id] = o_player
 
-        self.add_npc_player(STRUCT_TABLE, d_players, 8,  'Antareans',     'Antarean')
-        self.add_npc_player(STRUCT_TABLE, d_players, 9,  'Orion',         'Loknar')
-        self.add_npc_player(STRUCT_TABLE, d_players, 10, 'Space Amoeba',  'Amoeba')
-        self.add_npc_player(STRUCT_TABLE, d_players, 11, 'Space Crystal', 'Crystal')
-        self.add_npc_player(STRUCT_TABLE, d_players, 12, 'Space Dragon',  'Dragon')
-        self.add_npc_player(STRUCT_TABLE, d_players, 13, 'Space Eel',     'Eel')
-        self.add_npc_player(STRUCT_TABLE, d_players, 14, 'Space Hydra',   'Hydra')
+        self.add_npc_player(STRUCT_TABLE, d_players, K_RACE_ANTARAN,  'Antarans',      'Antaran')
+        self.add_npc_player(STRUCT_TABLE, d_players, K_RACE_ORION,    'Orion',         'Loknar')
+        self.add_npc_player(STRUCT_TABLE, d_players, K_RACE_AMOEBA,   'Space Amoeba',  'Amoeba')
+        self.add_npc_player(STRUCT_TABLE, d_players, K_RACE_CRYSTAL,  'Space Crystal', 'Crystal')
+        self.add_npc_player(STRUCT_TABLE, d_players, K_RACE_DRAGON,   'Space Dragon',  'Dragon')
+        self.add_npc_player(STRUCT_TABLE, d_players, K_RACE_EEL,      'Space Eel',     'Eel')
+        self.add_npc_player(STRUCT_TABLE, d_players, K_RACE_HYDRA,    'Space Hydra',   'Hydra')
         return d_players
 # ------------------------------------------------------------------------------
     def parse_stars(self):

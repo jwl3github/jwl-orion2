@@ -45,19 +45,22 @@ class Network_Client(object):
             if update_data:
                 o_colony.unserialize(update_data)
 
-    def fetch_colony_data(self):
+    def fetch_colony_data(self, i_colony_id):
+        self.send("FETCH_COLONY_DATA", {'colony_id': i_colony_id})
+        update_data = self.recv()
+        if update_data:
+            self.game_data['colonies'][i_colony_id].unserialize(update_data)
+            #print o_colony.serialize()
+        else:
+            print("! ERROR: Network_Client::fetch_colony_data() ... no data???")
+            ok = False
+
+    def fetch_all_colony_data(self):
         ok = True
         for i_colony_id, o_colony in self.game_data['colonies'].items():
             if o_colony.i_owner_id == self.player_id:
-                self.send("FETCH_COLONY_DATA", {'colony_id': o_colony.i_colony_id})
-                update_data = self.recv()
-                if update_data:
-                    o_colony.unserialize(update_data)
-                    #print o_colony.serialize()
-                else:
-                    print("! ERROR: Network_Client::fetch_colony_data() ... no data???")
-                    ok = False
-        print ("fetch_colony_data DONE.")
+                self.fetch_colony_data(o_colony.i_colony_id)
+        print ("fetch_all_colony_data DONE.")
         return ok
 
 
@@ -70,7 +73,7 @@ class Network_Client(object):
         player = self.game_data['players'][self.player_id]
         player.unserialize(update_data)
         print ("fetch_update_data DONE.")
-        self.fetch_colony_data()
+        self.fetch_all_colony_data()
         return True
 
     def fetch_game_data(self):
@@ -162,6 +165,20 @@ class Network_Client(object):
             print response
         return response == 'NEXT_TURN_ACK'
 
+    def set_colony_build_queue(self, colony_id, build_queue):
+        """ Sends the new build queue for given player's colony """
+        self.send("SET_BUILD_QUEUE", {'colony_id': colony_id, 'build_queue': build_queue})
+        #JWL# return self.fetch_game_data()
+        return self.fetch_update_data()
+
+    def change_colonist_job(self, i_colony_id, i_from_job, i_from_index, i_to_job):
+        self.send("CHANGE_COLONIST_JOB", {'i_colony_id':  i_colony_id,
+                                          'i_from_job':   i_from_job,
+                                          'i_from_index': i_from_index,
+                                          'i_to_job':     i_to_job})
+        self.fetch_colony_data(i_colony_id)
+        return self.fetch_update_data()
+
     def set_research(self, i_tech_id):
         self.send("SET_RESEARCH", {'tech_id': i_tech_id})
         return self.fetch_update_data()
@@ -180,13 +197,6 @@ class Network_Client(object):
             print("PING: %ss" % (ping_time))
         else:
             print("PING: WRONG RESPONSE '%s' returned in %ss" % (ping_response, ping_time))
-
-
-    def set_colony_build_queue(self, colony_id, build_queue):
-        """ Sends the new build queue for given player's colony """
-        self.send("SET_BUILD_QUEUE", {'colony_id': colony_id, 'build_queue': build_queue})
-        #JWL# return self.fetch_game_data()
-        return self.fetch_update_data()
 
 
 Client = Network_Client()
