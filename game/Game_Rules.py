@@ -415,9 +415,10 @@ def compose_pop_growth(RULES, colony, colony_leader, PLAYERS):
     if colony.is_outpost():
         return v_pop_growth
 
+    print 'FOOD =================================> %d' % colony.i_food
     v_pop_by_race  = colony.get_aggregated_populations()
     i_total_pop    = colony.total_population()
-    i_missing_food = 0 if (colony.i_food >= 0) else (-1 * colony.i_food)
+    i_food_missing = colony.get_food_missing()
 
     f_tech_bonus = 0.0
     for i_tech_id in PLAYERS[colony.i_owner_id].v_known_techs:
@@ -439,13 +440,13 @@ def compose_pop_growth(RULES, colony, colony_leader, PLAYERS):
             if colony.is_building_housing():
                 h = colony.i_industry / (2.5 * i_total_pop)
 
-            if i_missing_food > 0:
-                if i_race_pop > i_missing_food:
-                    s = -50 * i_missing_food
-                    i_missing_food = 0
+            if i_food_missing > 0:
+                if i_race_pop > i_food_missing:
+                    s = -50 * i_food_missing
+                    i_food_missing = 0
                 else:
                     s = -50 * i_race_pop
-                    i_missing_food -= i_race_pop
+                    i_food_missing -= i_race_pop
 
             if colony.has_building(Data_BUILDINGS.B_CLONING_CENTER):
                 c = 100 * i_race_pop / i_total_pop

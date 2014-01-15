@@ -96,10 +96,10 @@ class Gui_ColonyScreen(Gui_Screen.Gui_Screen):
         (tw, th)      = title_surface.get_size()
         self.blit(title_surface, (320 - (tw / 2), 1))
 
-        pop_text           = "Pop %i,%.3i k (+%i)" % ((actual_pop // 1000), (actual_pop % 1000), sum(colony.v_pop_grow))
+        pop_text           = "Pop %i,%.3i k (%+i k)" % ((actual_pop // 1000), (actual_pop % 1000), sum(colony.v_pop_grow))
         population         = self.render(K_FONT3, K_PALETTE_POPULATION, pop_text, 2)
         (tw, th)           = population.get_size()
-        self.blit(population, (529, 3))
+        self.blit(population, (520, 3))
 
         # government/morale icons
         player_government_id = PLAYERS[colony.i_owner_id].get_racepick_item('goverment')

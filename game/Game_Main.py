@@ -306,6 +306,24 @@ class Game_Main(object):
         if self.d_colonies.has_key(i_colony_id):
             self.d_colonies[i_colony_id].recount(self.d_rules, self.get_governor(i_colony_id), self.d_players)
 # ------------------------------------------------------------------------------
+    def recount_food_freighters(self, o_player):
+        # Distribute food via frieghters if needed and able.
+        i_can_ship = o_player.i_total_freighters - o_player.i_used_freighters
+        if (i_can_ship <= 0):
+            return
+        for i_colony_id, o_colony in self.d_colonies.items():
+            if not o_colony.exists() or (o_colony.i_owner_id != i_player_id):
+                continue
+            i_missing = o_colony.get_food_missing()
+            if i_missing >= i_can_ship:
+                o_colony.i_food_imported = i_can_ship
+                o_player.i_used_freighters += i_can_ship
+                return
+            elif i_missing > 0:
+                o_colony.i_food_imported = i_missing
+                o_player.i_used_freighters += i_missing
+        ### TODO Force player's i_food to show non-importable food shortage as a negative??
+# ------------------------------------------------------------------------------
     def recount_player(self, i_player_id):
         print "=== Recount Player <%d> ===" % i_player_id
 
@@ -317,9 +335,10 @@ class Game_Main(object):
             for i_colony_id, o_colony in self.d_colonies.items():
                 if o_colony.exists() and (o_colony.i_owner_id == i_player_id):
                     o_player.i_research += o_colony.i_research
-                    o_player.i_food     += o_colony.i_food - o_colony.total_population()
+                    o_player.i_food     += o_colony.compute_food_balance()
 
             if o_player.alive():
+                self.recount_food_freighters(o_player)
                 self.update_research(i_player_id, o_player.i_research_tech_id)
 # ------------------------------------------------------------------------------
     def recount_players(self):

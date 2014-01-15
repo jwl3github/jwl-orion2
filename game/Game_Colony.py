@@ -23,6 +23,9 @@ class Game_Colony(Game_Object.Game_Object):
         self.d_prod_summary             = {}
         self.v_max_populations          = []  # Colonist count (Modulo 1000 citizens)
         self.i_pop_boom_turns           = 0
+        self.i_food_used                = 0
+        self.i_food_balance             = 0
+        self.i_food_imported            = 0
         # Loaded:
         self.i_colony_id                = i_colony_id
         self.i_owner_id                 = 0
@@ -96,6 +99,19 @@ class Game_Colony(Game_Object.Game_Object):
         if (self.o_planet.i_foodbase > 0):
             return True
         return False ### TODO  Check radiated vs shield, etc
+# ------------------------------------------------------------------------------
+    def compute_food_balance(self):
+        self.i_food_used     = self.total_population()  # TODO - adjust for androids/lithovores
+        self.i_food_balance  = self.i_food - self.i_food_used
+        self.i_food_imported = 0  # Computed in Game_Main.recount_player
+        return self.i_food_balance
+# ------------------------------------------------------------------------------
+    def get_food_extra(self):
+        return 0 if self.i_food_balance <= 0 else self.i_food_balance
+# ------------------------------------------------------------------------------
+    def get_food_missing(self):
+        i_adj_balance = self.i_food_balance + self.i_food_imported
+        return 0 if i_adj_balance >= 0 else -1 * i_adj_balance
 # ------------------------------------------------------------------------------
     def has_building(self, building_id):
         return building_id in self.v_building_ids

@@ -17,8 +17,8 @@ class Game_Player(Game_Object.Game_Object):
         self.i_tax_rate             = 0
         self.i_bc                   = 0
         self.i_bc_income            = 0
-        self.i_total_frighters      = 0
-        self.i_used_frighters       = 0
+        self.i_total_freighters     = 0
+        self.i_used_freighters      = 0
         self.i_total_command        = 0
         self.i_industry             = 0
         self.i_research             = 0
@@ -51,8 +51,8 @@ class Game_Player(Game_Object.Game_Object):
         self.i_tax_rate             = d_init_struct['tax_rate']
         self.i_bc                   = d_init_struct['bc']
         self.i_bc_income            = d_init_struct['bc_income']
-        self.i_total_frighters      = d_init_struct['total_frighters']
-        self.i_used_frighters       = d_init_struct['used_frighters']
+        self.i_total_freighters     = d_init_struct['total_freighters']
+        self.i_used_freighters      = d_init_struct['used_freighters']
         self.i_total_command        = d_init_struct['total_command']
         self.i_food                 = d_init_struct['food']
         self.i_industry             = d_init_struct['industry']
@@ -188,8 +188,8 @@ class Game_Player(Game_Object.Game_Object):
         s_often  = '\nself.i_tax_rate            = ' + str(self.i_tax_rate)             +  \
                    '\nself.i_bc                  = ' + str(self.i_bc)                   +  \
                    '\nself.i_bc_income           = ' + str(self.i_bc_income)            +  \
-                   '\nself.i_total_frighters     = ' + str(self.i_total_frighters)      +  \
-                   '\nself.i_used_frighters      = ' + str(self.i_used_frighters)       +  \
+                   '\nself.i_total_freighters    = ' + str(self.i_total_freighters)     +  \
+                   '\nself.i_used_freighters     = ' + str(self.i_used_freighters)      +  \
                    '\nself.i_total_command       = ' + str(self.i_total_command)        +  \
                    '\nself.i_used_command        = ' + str(self.i_used_command)         +  \
                    '\nself.i_industry            = ' + str(self.i_industry)             +  \

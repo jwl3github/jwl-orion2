@@ -159,9 +159,28 @@ class Gui_MainScreen(Gui_Screen.Gui_Screen):
         self.prepare_stars()
 
         # stardate
-        self.write_text(K_FONT3, K_PALETTE_STARDATE, 561, 29, self.get_stardate_text(), 2)
+        self.write_text(K_FONT3, K_PALETTE_STARDATE, 561,  29, self.get_stardate_text(), 2)
 
-        # research
+        # bc readout
+        palette = K_PALETTE_RESEARCH if (player.i_bc_income > 0) else K_PALETTE_WARN
+        self.write_text(K_FONT4, palette, 552,  55, "%d BC" % player.i_bc, 2)
+        self.write_text(K_FONT4, palette, 552, 105, '%d' % player.i_bc_income, 2)
+
+        # cp readout
+        i_extra = player.i_total_command - player.i_used_command
+        palette = K_PALETTE_RESEARCH if (i_extra > 0) else K_PALETTE_WARN
+        self.write_text(K_FONT4, palette, 552, 177, '%d (%d)' % (player.i_total_command, i_extra), 2)
+
+        # food readout
+        palette = K_PALETTE_RESEARCH if (player.i_food >= 0) else K_PALETTE_WARN
+        self.write_text(K_FONT4, palette, 552, 250, '%d' % player.i_food, 2)
+
+        # freighters readout
+        i_extra = player.i_total_freighters - player.i_used_freighters
+        palette = K_PALETTE_RESEARCH if (i_extra > 0) else K_PALETTE_WARN
+        self.write_text(K_FONT4, K_PALETTE_RESEARCH, 552, 325, '%d (%d)' % (player.i_total_freighters, i_extra), 2)
+
+        # research readout
         self.write_text(K_FONT4, K_PALETTE_RESEARCH, 552, 380, "~%s turns" % player.i_research_turns_left, 2)
         self.write_text(K_FONT4, K_PALETTE_RESEARCH, 552, 400, "%i RP" % player.i_research, 2)
 # ------------------------------------------------------------------------------
