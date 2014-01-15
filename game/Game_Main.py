@@ -238,30 +238,30 @@ class Game_Main(object):
             return False
 
         if i_to_job not in (K_FARMER, K_WORKER, K_SCIENTIST):
-            print 'Invalid i_to_job <%d>' % i_to_job
+            print 'change_colonist_job: Invalid i_to_job <%d>' % i_to_job
             return False
 
         if i_from_job == i_to_job:
-            print 'Colonists moved back to same job. Job change ignored.'
+            print 'change_colonist_job: Colonists moved back to same job. Job change ignored.'
             return True
 
         if (i_to_job == K_FARMER) and not o_colony.allows_farming():
-            print 'Cannot have farmers on this planet. Job change ignored.'
+            print 'change_colonist_job: Cannot have farmers on this planet. Job change ignored.'
             return True
 
         c = len(o_colony.d_colonists[i_from_job]) - 1
         while c >= i_from_index:
             if o_colony.d_colonists[i_from_job][c].allowed_job(i_to_job):
-                print 'Cannot move colonist <%d> to unqualified job. Job change ignored.' % c
-            else:
+                print 'change_colonist_job: Move colonist <%d> to new job <%d>.' % (c, i_to_job)
+                o_colony.d_colonists[i_from_job][c].set_job(i_to_job)
                 o_colony.d_colonists[i_to_job].append(o_colony.d_colonists[i_from_job].pop(c))
-                o_colony.d_colonists[i_to_job].set_job(i_to_job)
+            else:
+                print 'change_colonist_job: Cannot move colonist <%d> to unqualified job. Job change ignored.' % c
             c -= 1
 
         self.recount_colony(i_colony_id)
         self.recount_player(i_player_id)
         return True
-
 # ------------------------------------------------------------------------------
     def determine_player_research_areas(self, o_player):
         # Determine the player's upcoming research area by checking
@@ -437,6 +437,7 @@ class Game_Main(object):
         """
         print("@ Game_Main::colonies_production()")
         for i_colony_id, o_colony in self.d_colonies.items():
+            o_colony.raise_population(self.d_players)
             b_remove    = False
             b_recount   = False
             build_item  = o_colony.get_build_item()

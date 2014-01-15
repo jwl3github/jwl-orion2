@@ -171,7 +171,7 @@ K_PLANET_TOL_BY_SIZE      = [2,  4,  6,  8, 10]   # Base amount of ignored pollu
 '''
 http://masteroforion2.blogspot.com/2005/10/maximum-population.html
 '''
-K_PLANET_POP              = {
+K_PLANET_POP = {
     #                To, Ra, Ba, De, Tu, Oc, Sw, Ar, Te, Ga
     '':           [ [ 1,  1,  1,  1,  1,  1,  2,  3,  4,  5],
                     [ 3,  3,  3,  3,  3,  3,  4,  6,  8, 10],

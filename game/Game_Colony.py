@@ -21,7 +21,8 @@ class Game_Colony(Game_Object.Game_Object):
         self.v_build_queue              = []
         self.d_available_production     = {}
         self.d_prod_summary             = {}
-        self.v_max_populations          = []
+        self.v_max_populations          = []  # Colonist count (Modulo 1000 citizens)
+        self.i_pop_boom_turns           = 0
         # Loaded:
         self.i_colony_id                = i_colony_id
         self.i_owner_id                 = 0
@@ -33,8 +34,8 @@ class Game_Colony(Game_Object.Game_Object):
         self.i_pollution                = 0
         self.i_population               = 0
         self.i_assignment               = 0
-        self.v_pop_raised               = []
-        self.v_pop_grow                 = []
+        self.v_pop_raised               = []  # Actual citizen count [0 .. 1000]
+        self.v_pop_grow                 = []  # Actual citizen count [0 .. 1000]
         #self.i_num_turns_existed        = 0
         #self.i_food_per_farmer          = 0  # Not currently used
         #self.i_industry_per_worker      = 0  # Not currently used
@@ -137,7 +138,10 @@ class Game_Colony(Game_Object.Game_Object):
 # ------------------------------------------------------------------------------
     def update_industry_progress(self):
         # Amount of industry accumulated for the current build item.
-        self.i_industry_progress += self.i_industry
+        if self.is_building_housing() or self.is_building_trade_goods():
+            self.i_industry_progress = 0
+        else:
+            self.i_industry_progress += self.i_industry
         return self.i_industry_progress
 # ------------------------------------------------------------------------------
     def reset_industry_progress(self):
@@ -156,6 +160,21 @@ class Game_Colony(Game_Object.Game_Object):
             self.v_build_queue.pop(i_index)
         except:
             print 'ERROR: remove_build_item <%d> - no such item' % i_building_id
+# ------------------------------------------------------------------------------
+    def set_population_boom(self, i_turns):
+        self.i_pop_boom_turns = i_turns
+# ------------------------------------------------------------------------------
+    def has_population_boom(self):
+        return self.i_pop_boom_turns > 0
+# ------------------------------------------------------------------------------
+    def is_building_housing(self):
+        i_build_item = self.get_build_item()
+        return (i_build_item != None) and (i_build_item == Data_BUILDINGS.B_HOUSING)
+# ------------------------------------------------------------------------------
+    def is_building_trade_goods(self):
+        i_build_item = self.get_build_item()
+        # Trade Goods is default if nothing has been specified.
+        return (i_build_item == None) or (i_build_item == Data_BUILDINGS.B_HOUSING)
 # ------------------------------------------------------------------------------
     def get_build_item(self):
         if len(self.v_build_queue) < 1:
@@ -184,19 +203,39 @@ class Game_Colony(Game_Object.Game_Object):
         if self.i_owner_id == 0xff:
             print "owner is 0xff"
             return
+
+        if self.i_pop_boom_turns > 0:
+            self.i_pop_boom_turns -= 1
+
         b_pop_changed = False
         v_max_populations = self.v_max_populations
         for i_race in range(K_MAX_PLAYERS):
+            if self.v_pop_grow[i_race] == 0:
+                continue
+            i_curr_population = self.get_colonist_count(i_race)
             self.v_pop_raised[i_race] += self.v_pop_grow[i_race]
             if self.v_pop_raised[i_race] > 999:
-                # the race that turns over 999 in v_pop_raised gets a new farmer
-                colonist = Game_Colonist.Game_Colonist(self.i_owner_id, i_race)
-                colonist.init(PLAYERS)
-                self.d_colonists[K_FARMER].append(colonist)
-                self.v_pop_raised[i_race] -= 1000
-                self.i_population += 1
-                b_pop_changed = True
+                if i_curr_population < v_max_populations[i_race]:
+                    # the race that turns over 999 in v_pop_raised gets a new farmer
+                    colonist = Game_Colonist.Game_Colonist(self.i_owner_id, i_race)
+                    colonist.init(PLAYERS)
+                    self.d_colonists[K_FARMER].append(colonist)
+                    self.v_pop_raised[i_race] -= 1000
+                    self.i_population += 1
+                    b_pop_changed = True
+                else:
+                    # Allow the raised pop to stay at its max so that starvation
+                    # does not immediately drop the colonist count.
+                    self.v_pop_raised[i_race] = 999
         return b_pop_changed
+# ------------------------------------------------------------------------------
+    def get_colonist_count(self, i_race):
+        i_count = 0
+        for i_type in (K_FARMER, K_WORKER, K_SCIENTIST):
+            for o_colonist in self.d_colonists[i_type]:
+                if o_colonist.race == i_race:
+                    i_count += 1
+        return i_count
 # ------------------------------------------------------------------------------
     def total_population(self):
         #return len(self.d_colonists[K_FARMER]) + len(self.d_colonists[K_WORKER]) + len(self.d_colonists[K_SCIENTIST])
@@ -328,17 +367,16 @@ class Game_Colony(Game_Object.Game_Object):
         return s_serial
 # ------------------------------------------------------------------------------
     def unserialize_colonists(self, s_serial):
-        self.d_colonists = {K_FARMER: [], K_WORKER: [], K_SCIENTIST: []}
+        self.d_colonists  = {K_FARMER: [], K_WORKER: [], K_SCIENTIST: []}
+        self.b_mixed_race = False
         for s_group in s_serial.split(' '):
             if not s_group:
                 continue
-            print 'grp <' + s_group + '>'
             s_type, s_data = s_group.split('=')
             i_type = int(s_type)
             for s_member in s_data.split('|'):
                 if not s_member:
                     continue
-                print 'mem <' + s_member + '>'
                 s_count, s_riot, s_race, s_grav = s_member.split(',')
                 b_rioting = True if s_riot == '-' else False
                 b_low_g   = True if s_grav == 'L' else False
@@ -347,6 +385,8 @@ class Game_Colony(Game_Object.Game_Object):
                     o_colonist = Game_Colonist.Game_Colonist(self.i_owner_id, int(s_race))
                     o_colonist.init_unserialized(i_type, b_rioting, b_low_g, b_high_g)
                     self.d_colonists[i_type].append(o_colonist)
+                    if o_colonist.race != self.i_owner_id:
+                        self.b_mixed_race = True
 # ------------------------------------------------------------------------------
     def unserialize(self, s_serial):
         try:

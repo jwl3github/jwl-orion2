@@ -3,6 +3,8 @@ B_CLONING_CENTER    = 10
 B_GRAVITY_GENERATOR = 25
 B_REPEAT            = 249
 B_NONE              = 255
+B_HOUSING           = 253
+B_TRADE_GOODS       = 254
 
 # ------------------------------------------------------------------------------
 BUILDINGS = {

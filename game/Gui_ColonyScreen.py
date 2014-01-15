@@ -110,9 +110,11 @@ class Gui_ColonyScreen(Gui_Screen.Gui_Screen):
         self.repeat_draw(340, 35, self.get_image('morale_icon', s_morale_type), i_morale_num, 30, 7, 155)
 
         # Food icons
-        xx = 10
-        x  = self.repeat_draw(128, 64, self.get_image('production_10food'), colony.i_food // 10, xx, 6, 98)
-        x  = self.repeat_draw(x,   64, self.get_image('production_1food'),  colony.i_food %  10, xx, 6, 98)
+        #xx = 10
+        number = (colony.i_food // 10) + (colony.i_food % 10)
+        xx = min(int(round(160 / max(1, number))), 20)
+        x  = self.repeat_draw(128, 64, self.get_image('production_10food'), colony.i_food // 10, xx, 99, 162) #6, 98)
+        x  = self.repeat_draw(x,   64, self.get_image('production_1food'),  colony.i_food %  10, xx, 99, 162) #6, 98)
         # TODO missing (red outline) food
 
         # Industry icons

@@ -324,12 +324,12 @@ def compose_bc_summaryxxx(RULES, colony, PLAYERS):
     planet = colony.planet()
 
     summary = {
-        'taxes_collected':        0,
-        'special_income':        0,
-        'morale_bonus':        0,
-        'government_bonus':        0,
-        'stock_exchange':        0,
-        'spaceport':        0,
+        'taxes_collected':    0,
+        'special_income':     0,
+        'morale_bonus':       0,
+        'government_bonus':   0,
+        'stock_exchange':     0,
+        'spaceport':          0,
         'trade_goods':        0
     }
 
@@ -359,8 +359,7 @@ def compose_bc_summaryxxx(RULES, colony, PLAYERS):
         summary['spaceport'] = int(summary['taxes_collected'] / 2)
 
     # TODO: Trade Goods ... round the 50% of industry
-    build_item = colony.get_build_item()
-    if (not build_item or build_item == BUILD_TRADE_GOODS):
+    if colony.is_building_trade_goods():
         summary['trade_goods'] = int(colony.i_industry / 2)
 
     return summary
@@ -412,12 +411,13 @@ def compose_pop_growth(RULES, colony, colony_leader, PLAYERS):
     """
     http://masteroforion2.blogspot.com/2005/09/growth-formula.html
     """
-    v_pop_growth = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    v_pop_growth = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]   # Actual citizen count [0 .. 1000]
     if colony.is_outpost():
         return v_pop_growth
 
-    v_pop_by_race = colony.get_aggregated_populations()
-    i_total_pop   = colony.total_population()
+    v_pop_by_race  = colony.get_aggregated_populations()
+    i_total_pop    = colony.total_population()
+    i_missing_food = 0 if (colony.i_food >= 0) else (-1 * colony.i_food)
 
     f_tech_bonus = 0.0
     for i_tech_id in PLAYERS[colony.i_owner_id].v_known_techs:
@@ -428,22 +428,32 @@ def compose_pop_growth(RULES, colony, colony_leader, PLAYERS):
         if i_race_pop > 0:
             i_max_pop = colony.v_max_populations[i_race]
 
-            b = math.floor((2000 * i_race_pop * max(0, i_max_pop - i_total_pop) / i_max_pop) ** 0.5)
-
             g = PLAYERS[i_race].get_racepick_item('population') / 100.0  # g == GrowthPick
-            t = f_tech_bonus    # t == Tech Bonus
-            r = 0               # r == Random Bonus; TODO 1.0 when Population Boom occurring
-            l = get_hero_bonus(colony_leader, 'pop_growth')  # l == Leader Bonus
-            h = 0               # h == Housing; TODO Compute Housing bonus
-            s = 0               # s == Starvation; TODO Compute Starvation bonus (50k pop per missing food)
-            c = 0               # c == Cloning Center
+            t = f_tech_bonus                                             # t == Tech Bonus
+            r = 1.0 if colony.has_population_boom() else 0.0             # r == Random Bonus
+            l = get_hero_bonus(colony_leader, 'pop_growth')              # l == Leader Bonus
+            h = 0                                                        # h == Housing
+            s = 0                                                        # s == Starvation
+            c = 0                                                        # c == Cloning Center
+
+            if colony.is_building_housing():
+                h = colony.i_industry / (2.5 * i_total_pop)
+
+            if i_missing_food > 0:
+                if i_race_pop > i_missing_food:
+                    s = -50 * i_missing_food
+                    i_missing_food = 0
+                else:
+                    s = -50 * i_race_pop
+                    i_missing_food -= i_race_pop
 
             if colony.has_building(Data_BUILDINGS.B_CLONING_CENTER):
                 c = 100 * i_race_pop / i_total_pop
 
-            a = 1 + g + t + r + l + h
-
-            v_pop_growth[i_race] = int(((a * b) / 100) + math.floor(c) + s)
+            a      = 1.0 + g + t + r + l + h
+            b      = math.floor((2000 * i_race_pop * max(0, i_max_pop - i_total_pop) / i_max_pop) ** 0.5)
+            growth = (a * b) + math.floor(c) + s   # Note: http reference seems to be wrong for this equation
+            v_pop_growth[i_race] = int(growth)
 
     return v_pop_growth
 # ------------------------------------------------------------------------------
